@@ -9,11 +9,9 @@ const Navbar = () => {
 
       {/* Links */}
       <div className="flex items-center gap-6 text-gray-700">
-        <a href="#" className="hover:text-green-700 transition">Inicio</a>
-        <a href="#" className="hover:text-green-700 transition">Contacto</a>
-        <a href="#" className="hover:text-green-700 transition">Regístrate</a>
-
         <Link to="/">Inicio</Link>
+        <Link to="/contact">Contacto</Link>
+        <Link to="/register">Regístrate</Link>
         <Link to="/login">
           <button className="border border-green-700 px-4 py-1.5 rounded-md hover:bg-green-700 hover:text-white transition">
             Iniciar sesión

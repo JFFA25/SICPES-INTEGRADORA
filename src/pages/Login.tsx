@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
+import icon from "../assets/images/icon.ico";
+
 const Login = () => {
     useEffect(() => {
         document.title = "Login";
@@ -13,11 +15,13 @@ const Login = () => {
 
                 {/* ICONO */}
                 <div className="flex justify-center mb-4">
-                    <img
-                        src="https://cdn-icons-png.flaticon.com/512/69/69524.png"
-                        alt="icono"
-                        className="w-16"
-                    />
+                    <Link to="/">
+                        <img
+                            src={icon}
+                            alt="icono"
+                            className="w-16 cursor-pointer"
+                        />
+                    </Link>
                 </div>
 
                 {/* TÍTULO */}

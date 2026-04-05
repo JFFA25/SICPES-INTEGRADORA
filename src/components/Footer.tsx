@@ -15,7 +15,7 @@ const Footer = () => {
         <div className="text-center">
           <h3 className="text-lg font-bold">SICPES</h3>
           <p className="text-sm opacity-80">
-            © 2025 SICPES. Todos los derechos reservados.
+            © 2026 SICPES. Todos los derechos reservados.
           </p>
         </div>
 
