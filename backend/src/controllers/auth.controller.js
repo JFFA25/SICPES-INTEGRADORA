@@ -1,30 +1,55 @@
 const { createUser } = require("../models/user.model");
+const { sendConfirmationEmail } = require("../utils/mailer");
+const crypto = require("crypto");
 
-const registerUser = (req, res) => {
+const registerUser = async (req, res) => {
   const { nombre, email, password } = req.body;
 
-  // VALIDACIONES BACKEND
-  if (!nombre || !email || !password) {
-    return res.status(400).json({ error: "Todos los campos son obligatorios" });
-  }
+  // generar token
+  const token = crypto.randomBytes(20).toString("hex");
 
-  // GUARDAR EN BD
-  createUser({ nombre, email, password }, (err, result) => {
+  createUser({ nombre, email, password, token }, async (err) => {
     if (err) {
-      console.error(err);
-
-      // email duplicado
-      if (err.code === "ER_DUP_ENTRY") {
-        return res.status(400).json({ error: "El correo ya está registrado" });
-      }
-
-      return res.status(500).json({ error: "Error al registrar usuario" });
+      return res.status(500).json({ error: "Error al registrar" });
     }
 
-    res.json({ message: "Usuario guardado en MySQL 🎉" });
+    // enviar correo
+    await sendConfirmationEmail(email, token);
+
+    res.json({
+      message: "Se ha enviado un correo de confirmación 📩",
+    });
   });
 };
 
-module.exports = {
-  registerUser,
+module.exports = { registerUser };
+
+
+const db = require("../database/db");
+
+const confirmUser = (req, res) => {
+  const { token } = req.params;
+
+  const sql = `
+    UPDATE tbd_usuarios 
+    SET confirmado = 1, token = NULL 
+    WHERE token = ?
+  `;
+
+  db.query(sql, [token], (err, result) => {
+    if (err) {
+      console.error(err);
+      return res.redirect("http://localhost:5173/error");
+    }
+
+    // AQUÍ ESTÁ LA CLAVE
+    if (result.affectedRows === 0) {
+      return res.redirect("http://localhost:5173/error");
+    }
+
+    res.redirect("http://localhost:5173/confirmado");
+  });
 };
+
+module.exports = { confirmUser };
+module.exports = { registerUser, confirmUser };

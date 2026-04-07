@@ -6,6 +6,7 @@ import Contact from "./pages/Contact";
 import Dashboard from "./pages/Dashboard";
 import Reservation from "./pages/Reservation";
 import Payments from "./pages/Payments";
+import Confirm from "./pages/Confirm";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/reservation" element={<Reservation />} />
         <Route path="/payments" element={<Payments />} />
+        <Route path="/confirmado" element={<Confirm />} />
       </Routes>
     </BrowserRouter>
   );

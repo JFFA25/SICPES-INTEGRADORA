@@ -78,7 +78,7 @@ const Register = () => {
       if (!res.ok) {
         alert(data.error);
       } else {
-        setSuccess("Usuario registrado correctamente 🎉");
+        setSuccess("Usuario registrado correctamente. Revisa tu correo para confirmar tu cuenta.");
         setForm({ nombre: "", email: "", password: "" });
       }
 
