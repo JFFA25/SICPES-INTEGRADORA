@@ -1,82 +1,150 @@
-import { useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import icon from "../assets/images/icon.ico";
 
 const Login = () => {
-    useEffect(() => {
-        document.title = "Login";
-    }, []);
+  useEffect(() => {
+    document.title = "Login";
+  }, []);
 
+  const navigate = useNavigate();
 
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-200">
+  // ESTADOS
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+  });
 
-            <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md text-center">
+  const [error, setError] = useState("");
 
-                {/* ICONO */}
-                <div className="flex justify-center mb-4">
-                    <Link to="/">
-                        <img
-                            src={icon}
-                            alt="icono"
-                            className="w-16 cursor-pointer"
-                        />
-                    </Link>
-                </div>
+  // INPUTS
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
 
-                {/* TÍTULO */}
-                <h2 className="text-2xl font-bold text-green-600 mb-6">
-                    Inicia sesión
-                </h2>
+    setForm({
+      ...form,
+      [name]: value,
+    });
 
-                {/* FORM */}
-                <form className="space-y-4 text-left">
+    setError(""); // limpiar error al escribir
+  };
 
-                    {/* CORREO */}
-                    <div>
-                        <label className="text-green-600 font-medium">Correo</label>
-                        <input
-                            type="email"
-                            placeholder="Ingresa tu correo electrónico"
-                            className="w-full mt-1 px-4 py-2 border border-green-500 rounded-md focus:outline-none focus:ring-2 focus:ring-green-400"
-                        />
-                    </div>
+  // SUBMIT
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-                    {/* CONTRASEÑA */}
-                    <div>
-                        <label className="text-green-600 font-medium">Contraseña</label>
-                        <input
-                            type="password"
-                            placeholder="Ingresa tu contraseña"
-                            className="w-full mt-1 px-4 py-2 border border-green-500 rounded-md focus:outline-none focus:ring-2 focus:ring-green-400"
-                        />
-                    </div>
+    try {
+      const res = await fetch("http://localhost:3000/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // sesiones
+        body: JSON.stringify(form),
+      });
 
-                    {/* BOTÓN */}
-                    <button
-                        type="submit"
-                        className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition"
-                    >
-                        Entrar
-                    </button>
-                </form>
+      const data = await res.json();
 
-                {/* LINKS */}
-                <div className="mt-4 text-sm">
-                    <p>
-                        ¿No tienes una cuenta?{" "}
-                        <Link to="/register" className="text-green-600 hover:underline">
-                            Regístrate
-                        </Link>
-                    </p>
+      if (!res.ok) {
+        setError(data.error);
+        return;
+      }
 
-                    <p className="text-green-600 mt-2 cursor-pointer hover:underline">
-                        ¿Olvidaste tu contraseña?
-                    </p>
-                </div>
-            </div>
+      // LOGIN CORRECTO
+      navigate("/dashboard");
+
+    } catch (error) {
+      setError("Error al conectar con el servidor");
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-200">
+
+      <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md text-center">
+
+        {/* ICONO */}
+        <div className="flex justify-center mb-4">
+          <Link to="/">
+            <img
+              src={icon}
+              alt="icono"
+              className="w-16 cursor-pointer"
+            />
+          </Link>
         </div>
-    );
+
+        {/* TÍTULO */}
+        <h2 className="text-2xl font-bold text-green-600 mb-6">
+          Inicia sesión
+        </h2>
+
+        {/* FORM */}
+        <form onSubmit={handleSubmit} className="space-y-4 text-left">
+
+          {/* CORREO */}
+          <div>
+            <label className="text-green-600 font-medium">Correo</label>
+            <input
+              type="email"
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+              placeholder="Ingresa tu correo electrónico"
+              className={`w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                error ? "border-red-500 focus:ring-red-400" : "border-green-500 focus:ring-green-400"
+              }`}
+            />
+          </div>
+
+          {/* CONTRASEÑA */}
+          <div>
+            <label className="text-green-600 font-medium">Contraseña</label>
+            <input
+              type="password"
+              name="password"
+              value={form.password}
+              onChange={handleChange}
+              placeholder="Ingresa tu contraseña"
+              className={`w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                error ? "border-red-500 focus:ring-red-400" : "border-green-500 focus:ring-green-400"
+              }`}
+            />
+          </div>
+
+          {/* ERROR */}
+          {error && (
+            <p className="text-red-500 text-sm text-center">
+              {error}
+            </p>
+          )}
+
+          {/* BOTÓN */}
+          <button
+            type="submit"
+            className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition"
+          >
+            Entrar
+          </button>
+        </form>
+
+        {/* LINKS */}
+        <div className="mt-4 text-sm">
+          <p>
+            ¿No tienes una cuenta?{" "}
+            <Link to="/register" className="text-green-600 hover:underline">
+              Regístrate
+            </Link>
+          </p>
+
+          <p className="text-green-600 mt-2 cursor-pointer hover:underline">
+            ¿Olvidaste tu contraseña?
+          </p>
+        </div>
+
+      </div>
+    </div>
+  );
 };
 
 export default Login;
