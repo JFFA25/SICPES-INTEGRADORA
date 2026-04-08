@@ -12,7 +12,7 @@ const Reservation = () => {
 
   const navigate = useNavigate();
 
-  // 🧠 ESTADOS
+  // ESTADOS
   const [form, setForm] = useState({
     fecha_ingreso: "",
     piso: "",
@@ -23,8 +23,9 @@ const Reservation = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [hasReservation, setHasReservation] = useState(false);
+  const [occupiedRooms, setOccupiedRooms] = useState<string[]>([]);
 
-  // HABITACIONES POR PISO
+  // HABITACIONES
   const habitacionesPorPiso: any = {
     1: ["101", "102", "103", "104"],
     2: ["201", "202", "203", "204"],
@@ -48,9 +49,7 @@ const Reservation = () => {
 
         const data = await res.json();
 
-        if (data) {
-          setHasReservation(true);
-        }
+        if (data) setHasReservation(true);
 
       } catch {
         console.log("Error al verificar reservación");
@@ -60,9 +59,38 @@ const Reservation = () => {
     checkReservation();
   }, []);
 
+  // OBTENER HABITACIONES OCUPADAS
+  useEffect(() => {
+    if (!form.piso) return;
+
+    const fetchOccupied = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:3000/api/reservation/occupied?piso=${form.piso}`
+        );
+
+        const data = await res.json();
+
+      
+        setOccupiedRooms(data || []);
+
+      } catch {
+        console.log("Error al cargar habitaciones ocupadas");
+      }
+    };
+
+    fetchOccupied();
+  }, [form.piso]);
+
   // INPUTS
   const handleChange = (e: any) => {
     const { name, value } = e.target;
+
+    // VALIDAR HABITACIÓN OCUPADA
+    if (name === "habitacion" && occupiedRooms.includes(value)) {
+      setError("Esta habitación ya está ocupada. Elige otra.");
+      return;
+    }
 
     setForm({
       ...form,
@@ -72,7 +100,14 @@ const Reservation = () => {
     setError("");
   };
 
-  // SUBMIT
+  // VALIDACIÓN EXTRA
+  useEffect(() => {
+    if (form.habitacion && occupiedRooms.includes(form.habitacion)) {
+      setError("Esta habitación ya está ocupada. Elige otra.");
+    }
+  }, [form.habitacion, occupiedRooms]);
+
+  // 🚀 SUBMIT
   const handleSubmit = async (e: any) => {
     e.preventDefault();
 
@@ -83,6 +118,11 @@ const Reservation = () => {
 
     if (!form.fecha_ingreso || !tipo || !form.piso || !form.habitacion) {
       setError("Todos los campos son obligatorios");
+      return;
+    }
+
+    if (occupiedRooms.includes(form.habitacion)) {
+      setError("Esta habitación ya está ocupada. Elige otra.");
       return;
     }
 
@@ -135,7 +175,7 @@ const Reservation = () => {
           <Link to="/payments">Pagos</Link>
 
           <button
-            className="bg-black px-4 py-1 rounded"
+            className="bg-black px-4 py-1 rounded hover:bg-gray-800"
             onClick={async () => {
               await fetch("http://localhost:3000/api/logout", {
                 method: "POST",
@@ -162,7 +202,7 @@ const Reservation = () => {
             Completa el formulario para enviar una solicitud de cuarto.
           </p>
 
-          {/*  SI YA TIENE RESERVACIÓN */}
+          {/* YA TIENE RESERVACIÓN */}
           {hasReservation && (
             <p className="text-red-500 text-center mb-4">
               Ya tienes una reservación registrada
@@ -196,13 +236,9 @@ const Reservation = () => {
                   className={`border p-4 rounded-lg cursor-pointer text-center ${tipo === "individual" ? "border-green-600 bg-green-50" : ""
                     } ${hasReservation && "opacity-50 cursor-not-allowed"}`}
                 >
-                  <img
-                    src={individualImg}
-                    alt="individual"
-                    className="w-16 mx-auto mb-2"
-                  />
-
+                  <img src={individualImg} className="w-16 mx-auto mb-2" />
                   <p className="font-semibold">Individual</p>
+                  <p className="text-sm text-gray-500">Solo para ti</p>
                 </div>
 
                 <div
@@ -210,13 +246,9 @@ const Reservation = () => {
                   className={`border p-4 rounded-lg cursor-pointer text-center ${tipo === "compartida" ? "border-green-600 bg-green-50" : ""
                     } ${hasReservation && "opacity-50 cursor-not-allowed"}`}
                 >
-                  <img
-                    src={compartidaImg}
-                    alt="compartida"
-                    className="w-16 mx-auto mb-2"
-                  />
-
+                  <img src={compartidaImg} className="w-16 mx-auto mb-2" />
                   <p className="font-semibold">Compartida</p>
+                  <p className="text-sm text-gray-500">2-6 estudiantes</p>
                 </div>
 
               </div>
@@ -225,6 +257,7 @@ const Reservation = () => {
             {/* SELECTS */}
             <div className="grid md:grid-cols-2 gap-4">
 
+              {/* PISO */}
               <select
                 name="piso"
                 value={form.piso}
@@ -240,6 +273,7 @@ const Reservation = () => {
                 <option value="2">Piso 2</option>
               </select>
 
+              {/* HABITACIÓN */}
               <select
                 name="habitacion"
                 value={form.habitacion}
@@ -254,14 +288,40 @@ const Reservation = () => {
                 </option>
 
                 {form.piso &&
-                  habitacionesPorPiso[form.piso].map((hab: string) => (
-                    <option key={hab} value={hab}>
-                      Habitación {hab}
-                    </option>
-                  ))}
+                  habitacionesPorPiso[form.piso].map((hab: string) => {
+                    const isOccupied = occupiedRooms
+                      .map((r: any) => String(r))
+                      .includes(String(hab));
+
+                    return (
+                      <option
+                        key={hab}
+                        value={hab}
+                        disabled={isOccupied}
+                      >
+                        {isOccupied
+                          ? `Habitación ${hab} (Ocupada)`
+                          : `Habitación ${hab}`}
+                      </option>
+                    );
+                  })}
               </select>
 
             </div>
+
+            {/* MENSAJE GENERAL */}
+            {form.piso && occupiedRooms.length > 0 && (
+              <p className="text-yellow-600 text-sm mt-2">
+                Las habitaciones que esten marcadas como "ocupadas" no estarán disponibles para selección.
+              </p>
+            )}
+
+            {/* 🔴 MENSAJE ESPECÍFICO */}
+            {form.habitacion && occupiedRooms.includes(form.habitacion) && (
+              <p className="text-red-500 text-sm mt-2">
+                Esta habitación ya está ocupada. Selecciona otra.
+              </p>
+            )}
 
             {/* MONTO */}
             <input
@@ -279,6 +339,7 @@ const Reservation = () => {
               <p className="text-green-600 text-sm text-center">{success}</p>
             )}
 
+            {/* BOTÓN */}
             <button
               disabled={hasReservation}
               className={`w-full py-3 rounded-md text-white ${hasReservation
@@ -296,4 +357,4 @@ const Reservation = () => {
   );
 };
 
-export default Reservation;
+export default Reservation; 
