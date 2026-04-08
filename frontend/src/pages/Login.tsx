@@ -16,6 +16,7 @@ const Login = () => {
   });
 
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   // INPUTS
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,7 +40,7 @@ const Login = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include", // sesiones
+        credentials: "include", // incluir cookies
         body: JSON.stringify(form),
       });
 
@@ -100,16 +101,28 @@ const Login = () => {
           {/* CONTRASEÑA */}
           <div>
             <label className="text-green-600 font-medium">Contraseña</label>
-            <input
-              type="password"
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              placeholder="Ingresa tu contraseña"
-              className={`w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                error ? "border-red-500 focus:ring-red-400" : "border-green-500 focus:ring-green-400"
-              }`}
-            />
+
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                placeholder="Ingresa tu contraseña"
+                className={`w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                  error ? "border-red-500 focus:ring-red-400" : "border-green-500 focus:ring-green-400"
+                }`}
+              />
+
+              {/* BOTÓN VER */}
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-3 text-sm text-gray-600"
+              >
+                {showPassword ? "Ocultar" : "Ver"}
+              </button>
+            </div>
           </div>
 
           {/* ERROR */}

@@ -37,6 +37,10 @@ app.use(
 const authRoutes = require("./src/routes/auth.routes");
 app.use("/api", authRoutes);
 
+const reservationRoutes = require("./src/routes/reservation.routes");
+
+app.use("/api", reservationRoutes);
+
 // SERVIDOR
 const PORT = process.env.PORT || 3000;
 

@@ -54,7 +54,7 @@ const loginUser = (req, res) => {
     };
 
     return res.json({
-      message: "Login exitoso 🎉",
+      message: "Login exitoso",
     });
   });
 };
