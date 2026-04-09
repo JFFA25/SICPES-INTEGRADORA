@@ -8,7 +8,7 @@ const Contact = () => {
     }, []);
 
     return (
-        <div className="min-h-screen bg-gray-100">
+        <div className="min-h-screen bg-gray-100 animate-page-transition">
 
             {/* NAVBAR */}
             <div className="flex justify-between items-center px-10 py-4 bg-gray-100 shadow-sm">

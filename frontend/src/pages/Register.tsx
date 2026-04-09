@@ -17,6 +17,7 @@ const Register = () => {
   const [errors, setErrors] = useState<any>({});
   const [showPassword, setShowPassword] = useState(false);
   const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
 
   // VALIDACIÓN SIMPLE (UX)
   const validate = (name: string, value: string) => {
@@ -54,7 +55,7 @@ const Register = () => {
       ...form,
       [name]: value,
     });
-
+    setError("");
     validate(name, value);
   };
 
@@ -65,7 +66,7 @@ const Register = () => {
     if (errors.nombre || errors.email || errors.password) return;
 
     try {
-      const res = await fetch("http://localhost:3000/api/register", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -73,12 +74,12 @@ const Register = () => {
         body: JSON.stringify(form),
       });
 
-      const data = await res.json();
-
       if (!res.ok) {
-        alert(data.error);
+        setError(
+          "El correo electrónico ya está registrado. Intenta con otro o inicia sesión"
+        );
       } else {
-        setSuccess("Usuario registrado correctamente 🎉");
+        setSuccess("Usuario registrado correctamente. Revisa tu correo para confirmar tu cuenta.");
         setForm({ nombre: "", email: "", password: "" });
       }
 
@@ -88,10 +89,10 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-200">
-      
+    <div className="min-h-screen flex items-center justify-center bg-gray-200 animate-page-transition">
+
       <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md text-center">
-        
+
         {/* ICONO */}
         <div className="flex justify-center mb-4">
           <Link to="/">
@@ -113,14 +114,13 @@ const Register = () => {
             <input
               type="text"
               name="nombre"
-                placeholder="Ingresa tu nombre completo"
+              placeholder="Ingresa tu nombre completo"
               value={form.nombre}
               onChange={handleChange}
               className={`w-full mt-1 px-4 py-2 border rounded-md
-                ${
-                  errors.nombre
-                    ? "border-red-500"
-                    : form.nombre
+                ${errors.nombre
+                  ? "border-red-500"
+                  : form.nombre
                     ? "border-green-500"
                     : "border-gray-300"
                 }
@@ -137,14 +137,13 @@ const Register = () => {
             <input
               type="email"
               name="email"
-                placeholder="Ingresa tu correo electrónico"
+              placeholder="Ingresa tu correo electrónico"
               value={form.email}
               onChange={handleChange}
               className={`w-full mt-1 px-4 py-2 border rounded-md
-                ${
-                  errors.email
-                    ? "border-red-500"
-                    : form.email
+                ${errors.email
+                  ? "border-red-500"
+                  : form.email
                     ? "border-green-500"
                     : "border-gray-300"
                 }
@@ -163,14 +162,13 @@ const Register = () => {
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
-                  placeholder="Crea una contraseña"
+                placeholder="Crea una contraseña"
                 value={form.password}
                 onChange={handleChange}
                 className={`w-full mt-1 px-4 py-2 border rounded-md
-                  ${
-                    errors.password
-                      ? "border-red-500"
-                      : form.password
+                  ${errors.password
+                    ? "border-red-500"
+                    : form.password
                       ? "border-green-500"
                       : "border-gray-300"
                   }
@@ -196,6 +194,11 @@ const Register = () => {
           {success && (
             <p className="text-green-600 text-sm">{success}</p>
           )}
+          {error && (
+            <p className="text-red-500 text-sm text-center">
+              {error}
+            </p>
+          )}
 
           {/* BOTÓN */}
           <button
@@ -204,10 +207,9 @@ const Register = () => {
               errors.nombre || errors.email || errors.password
             }
             className={`w-full py-2 rounded-md text-white
-              ${
-                errors.nombre || errors.email || errors.password
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-green-600 hover:bg-green-700"
+              ${errors.nombre || errors.email || errors.password
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-green-600 hover:bg-green-700"
               }
             `}
           >
