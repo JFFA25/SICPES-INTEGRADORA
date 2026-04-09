@@ -35,7 +35,7 @@ const Login = () => {
     e.preventDefault();
 
     try {
-      const res = await fetch("http://localhost:3000/api/login", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -51,8 +51,25 @@ const Login = () => {
         return;
       }
 
-      // LOGIN CORRECTO
-      navigate("/dashboard");
+      // CONSEGUIR SESION ACTUAL PARA VER ROL Y REDIRIGIR AL LUGAR CORRECTO
+      const sessionRes = await fetch(`${import.meta.env.VITE_API_URL}/api/session`, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+
+      if (sessionRes.ok) {
+        const sessionData = await sessionRes.json();
+        
+        if (sessionData.rol === "admin") {
+          navigate("/admin/reservations");
+        } else {
+          navigate("/dashboard");
+        }
+      } else {
+        navigate("/dashboard"); // Fallback
+      }
 
     } catch (error) {
       setError("Error al conectar con el servidor");
@@ -60,7 +77,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-200">
+    <div className="min-h-screen flex items-center justify-center bg-gray-200 animate-page-transition">
 
       <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md text-center">
 

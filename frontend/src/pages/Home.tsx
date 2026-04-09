@@ -4,16 +4,16 @@ import Footer from "../components/Footer";
 import { useEffect } from "react";
 
 const Home = () => {
-    useEffect(() => {
+  useEffect(() => {
     document.title = "SICPES";
   }, []);
 
   return (
-    <>
+    <div className="animate-page-transition">
       <Navbar />
       <Hero />
       <Footer />
-    </>
+    </div>
   );
 };
 

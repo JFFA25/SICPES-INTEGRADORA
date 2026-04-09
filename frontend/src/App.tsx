@@ -7,6 +7,10 @@ import Dashboard from "./pages/Dashboard";
 import Reservation from "./pages/Reservation";
 import Payments from "./pages/Payments";
 import Confirm from "./pages/Confirm";
+import AdminReservations from "./pages/AdminReservation";
+import AdminSettings from "./pages/AdminSettings";
+import AdminPayments from "./pages/AdminPayments";
+import Error from "./pages/Error";
 
 function App() {
   return (
@@ -20,6 +24,10 @@ function App() {
         <Route path="/reservation" element={<Reservation />} />
         <Route path="/payments" element={<Payments />} />
         <Route path="/confirmado" element={<Confirm />} />
+        <Route path="/admin/reservations" element={<AdminReservations />} />
+        <Route path="/admin/payments" element={<AdminPayments />} />
+        <Route path="/admin/settings" element={<AdminSettings />} />
+        <Route path="/error" element={<Error />} />
       </Routes>
     </BrowserRouter>
   );

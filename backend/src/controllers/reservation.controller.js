@@ -26,8 +26,8 @@ const createReservationController = (req, res) => {
     });
   }
 
-  // validar si ya tiene reservación
-  const sqlUserCheck = "SELECT * FROM tbd_reservaciones WHERE usuario_id = ?";
+  // validar si ya tiene reservación ACTIVA
+  const sqlUserCheck = "SELECT * FROM tbd_reservaciones WHERE usuario_id = ? AND estado NOT IN ('cancelada', 'rechazada', 'finalizada')";
 
   db.query(sqlUserCheck, [usuario_id], (err, results) => {
     if (err) {
@@ -45,7 +45,7 @@ const createReservationController = (req, res) => {
       SELECT * FROM tbd_reservaciones
       WHERE piso = ?
       AND habitacion = ?
-      AND estado != 'cancelada'
+      AND estado NOT IN ('cancelada', 'rechazada', 'finalizada')
     `;
 
     db.query(sqlRoomCheck, [piso, habitacion], (err, roomResults) => {
@@ -127,24 +127,52 @@ const getAllReservations = (req, res) => {
 
 const updateReservationStatus = (req, res) => {
   const { id } = req.params;
-  const { estado } = req.body; // pendiente | aceptada | cancelada
+  const { estado, monto, piso, habitacion, motivo_rechazo } = req.body;
 
-  // validar estado
-  const estadosValidos = ["pendiente", "aceptada", "cancelada"];
+  let updates = [];
+  let values = [];
 
-  if (!estadosValidos.includes(estado)) {
-    return res.status(400).json({
-      error: "Estado inválido",
-    });
+  if (estado) {
+    const estadosValidos = ["pendiente", "aceptada", "cancelada", "rechazada", "finalizada"];
+    if (!estadosValidos.includes(estado)) {
+      return res.status(400).json({ error: "Estado inválido" });
+    }
+    updates.push("estado = ?");
+    values.push(estado);
+  }
+
+  if (monto !== undefined) {
+    updates.push("monto = ?");
+    values.push(monto);
+  }
+
+  if (piso !== undefined) {
+    updates.push("piso = ?");
+    values.push(piso);
+  }
+
+  if (habitacion !== undefined) {
+    updates.push("habitacion = ?");
+    values.push(habitacion);
+  }
+
+  if (motivo_rechazo !== undefined) {
+    updates.push("motivo_rechazo = ?");
+    values.push(motivo_rechazo);
+  }
+
+  if (updates.length === 0) {
+    return res.status(400).json({ error: "No hay campos por actualizar" });
   }
 
   const sql = `
     UPDATE tbd_reservaciones 
-    SET estado = ? 
+    SET ${updates.join(", ")}
     WHERE id = ?
   `;
+  values.push(id);
 
-  db.query(sql, [estado, id], (err, result) => {
+  db.query(sql, values, (err, result) => {
     if (err) {
       return res.status(500).json({
         error: "Error al actualizar estado",
@@ -158,7 +186,7 @@ const updateReservationStatus = (req, res) => {
     }
 
     res.json({
-      message: "Estado actualizado correctamente",
+      message: "Actualizado correctamente",
     });
   });
 };
@@ -172,7 +200,7 @@ const getOccupiedRooms = (req, res) => {
     SELECT habitacion 
     FROM tbd_reservaciones
     WHERE piso = ?
-    AND estado != 'cancelada'
+    AND estado NOT IN ('cancelada', 'rechazada', 'finalizada')
   `;
 
   db.query(sql, [piso], (err, results) => {

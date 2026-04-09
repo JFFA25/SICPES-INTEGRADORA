@@ -22,7 +22,7 @@ const Hero = () => {
         <img
           src={departamento}
           alt="edificio"
-          className="w-[350px] md:w-[500px] lg:w-[600px] drop-shadow-xl"
+          className="w-[350px] md:w-[500px] lg:w-[600px] drop-shadow-xl animate-building-enter"
         />
       </div>
     </section>

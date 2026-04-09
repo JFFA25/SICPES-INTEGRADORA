@@ -46,15 +46,29 @@ const loginUser = (req, res) => {
       });
     }
 
-    // CREAR SESIÓN
-    req.session.user = {
-      id: user.id,
-      nombre: user.nombre,
-      email: user.email,
-    };
+    // REGENERAR SESIÓN PARA EVITAR DATOS ANTIGUOS
+    req.session.regenerate((err) => {
+      if (err) {
+        return res.status(500).json({ error: "Error al crear la sesión" });
+      }
 
-    return res.json({
-      message: "Login exitoso",
+      // CREAR SESIÓN
+      req.session.user = {
+        id: user.id,
+        nombre: user.nombre,
+        email: user.email,
+        rol: user.rol
+      };
+
+      req.session.save((err) => {
+        if (err) {
+          return res.status(500).json({ error: "Error al guardar la sesión" });
+        }
+        
+        return res.json({
+          message: "Login exitoso",
+        });
+      });
     });
   });
 };
@@ -119,4 +133,12 @@ const confirmUser = (req, res) => {
 };
 
 
-module.exports = { loginUser, registerUser, confirmUser, getSession };
+const logoutUser = (req, res) => {
+  req.session.destroy((err) => {
+    if (err) return res.status(500).json({ error: "Error al cerrar sesión" });
+    res.clearCookie("connect.sid");
+    res.json({ message: "Sesión cerrada correctamente" });
+  });
+};
+
+module.exports = { loginUser, registerUser, confirmUser, getSession, logoutUser };

@@ -8,7 +8,7 @@ const Confirmado = () => {
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-200">
+    <div className="min-h-screen flex items-center justify-center bg-gray-200 animate-page-transition">
       
       <div className="bg-white p-10 rounded-xl shadow-md text-center max-w-md w-full">
         

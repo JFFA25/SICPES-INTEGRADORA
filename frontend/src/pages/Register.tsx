@@ -66,7 +66,7 @@ const Register = () => {
     if (errors.nombre || errors.email || errors.password) return;
 
     try {
-      const res = await fetch("http://localhost:3000/api/register", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -89,7 +89,7 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-200">
+    <div className="min-h-screen flex items-center justify-center bg-gray-200 animate-page-transition">
 
       <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md text-center">
 

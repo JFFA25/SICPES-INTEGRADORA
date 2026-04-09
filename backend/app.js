@@ -38,8 +38,19 @@ const authRoutes = require("./src/routes/auth.routes");
 app.use("/api", authRoutes);
 
 const reservationRoutes = require("./src/routes/reservation.routes");
-
 app.use("/api", reservationRoutes);
+
+const paymentRoutes = require("./src/routes/payment.routes");
+app.use("/api/payment", paymentRoutes);
+
+const roomRoutes = require("./src/routes/room.routes");
+app.use("/api/rooms", roomRoutes);
+
+const adminRoutes = require("./src/routes/admin.routes");
+app.use("/api/admin", adminRoutes);
+
+const adminController = require("./src/controllers/admin.controller");
+app.get("/api/settings", adminController.getPublicSettings);
 
 // SERVIDOR
 const PORT = process.env.PORT || 3000;
