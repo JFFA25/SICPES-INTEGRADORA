@@ -12,10 +12,43 @@ const Dashboard = () => {
   // RESERVACIÓN
   const [reservation, setReservation] = useState<any>(null);
 
+  // PAGO
+  const [paymentAmount, setPaymentAmount] = useState<number>(0);
+  const [paymentMonth, setPaymentMonth] = useState<number | null>(null);
+  const [paymentYear, setPaymentYear] = useState<number | null>(null);
+  const [paymentLabel, setPaymentLabel] = useState("MES ACTUAL");
+  const [currentMonthStatus, setCurrentMonthStatus] = useState<string | null>(null);
+  const [isProrated, setIsProrated] = useState(false);
+
   useEffect(() => {
     document.title = "Dashboard";
 
-    // SESIÓN
+    const calculatePayment = (res: any, targetMonth?: number, targetYear?: number) => {
+      const basePrice = res.tipo === "individual" ? 2000 : 1200;
+      const dateStr = res.fecha_ingreso ? res.fecha_ingreso.split("T")[0] : "";
+      if (!dateStr) {
+        setPaymentAmount(basePrice);
+        setIsProrated(false);
+        return;
+      }
+
+      const [year, month, day] = dateStr.split("-").map(Number);
+      const today = new Date();
+      const currentMonth = targetMonth ?? today.getMonth() + 1;
+      const currentYear = targetYear ?? today.getFullYear();
+
+      if (currentYear === year && currentMonth === month) {
+        const daysInMonth = new Date(year, month, 0).getDate();
+        const daysRemaining = daysInMonth - day + 1;
+        const prorated = (basePrice / daysInMonth) * daysRemaining;
+        setPaymentAmount(prorated);
+        setIsProrated(true);
+      } else {
+        setPaymentAmount(basePrice);
+        setIsProrated(false);
+      }
+    };
+
     const getSession = async () => {
       try {
         const res = await fetch("http://localhost:3000/api/session", {
@@ -35,7 +68,6 @@ const Dashboard = () => {
       }
     };
 
-    // RESERVACIÓN
     const getReservation = async () => {
       try {
         const res = await fetch("http://localhost:3000/api/reservation/me", {
@@ -44,17 +76,65 @@ const Dashboard = () => {
 
         const data = await res.json();
         setReservation(data);
+        return data;
 
       } catch {
         console.log("Error al obtener reservación");
+        return null;
       }
     };
 
-    // LLAMADAS
-    getSession();
-    getReservation();
+    const getPaymentInfo = async (reservationData: any) => {
+      try {
+        const res = await fetch("http://localhost:3000/api/payment/me", {
+          credentials: "include",
+        });
 
-  }, []);
+        if (!res.ok) return;
+
+        const payments = await res.json();
+        const today = new Date();
+        const currentMonth = today.getMonth() + 1;
+        const currentYear = today.getFullYear();
+
+        const thisMonthPayment = payments.find((p: any) => p.mes === currentMonth && p.anio === currentYear);
+        let targetMonth = currentMonth;
+        let targetYear = currentYear;
+        let targetStatus = thisMonthPayment?.estado ?? null;
+        let label = "MES ACTUAL";
+
+        if (thisMonthPayment?.estado === "pagado") {
+          targetMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+          targetYear = currentMonth === 12 ? currentYear + 1 : currentYear;
+          const nextMonthPayment = payments.find((p: any) => p.mes === targetMonth && p.anio === targetYear);
+          targetStatus = nextMonthPayment?.estado ?? null;
+          label = "SIGUIENTE PAGO";
+        }
+
+        setPaymentMonth(targetMonth);
+        setPaymentYear(targetYear);
+        setPaymentLabel(label);
+        setCurrentMonthStatus(targetStatus);
+
+        if (reservationData && reservationData.estado === "aceptada") {
+          calculatePayment(reservationData, targetMonth, targetYear);
+        }
+      } catch {
+        console.log("Error al obtener información de pagos");
+      }
+    };
+
+    const fetchData = async () => {
+      await getSession();
+      const reservationData = await getReservation();
+      if (reservationData) {
+        await getPaymentInfo(reservationData);
+      }
+    };
+
+    fetchData();
+
+  }, [navigate]);
 
   // evita parpadeo
   if (!user) return null;
@@ -203,14 +283,27 @@ const Dashboard = () => {
               </div>
             ) : (
               <div className="space-y-2">
-                <p className="text-gray-600">Monto: <strong className="text-gray-800">N/A</strong></p>
-                <p className="text-gray-600">Vence: <strong className="text-gray-800">N/A</strong></p>
+                <p className="text-gray-600">Monto: <strong className="text-gray-800">{paymentMonth ? new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(paymentAmount) : 'N/A'}</strong></p>
+                <p className="text-gray-600">Vence: <strong className="text-gray-800">{paymentMonth ? '1ro de c/ mes' : 'N/A'}</strong></p>
+                {paymentMonth && paymentYear && (
+                  <p className="text-gray-600">Periodo: <strong className="text-gray-800">{paymentMonth}/{paymentYear}</strong></p>
+                )}
                 <p className="text-gray-600 mt-2">
                   Estado:{" "}
-                  <strong className="text-gray-500 ml-1">
-                    N/A
+                  <strong className={`ml-1 px-2 py-1 rounded-full text-xs uppercase tracking-wide ${currentMonthStatus === 'pagado'
+                      ? 'bg-green-100 text-green-700'
+                      : currentMonthStatus === 'pendiente'
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'bg-yellow-100 text-yellow-700'
+                    }`}>
+                    {currentMonthStatus === 'pagado' ? 'Pagado' : currentMonthStatus === 'pendiente' ? 'En revisión' : 'Por realizar'}
                   </strong>
                 </p>
+                {isProrated && (
+                  <div className="inline-flex items-center rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700 uppercase tracking-wide">
+                    Prorrateo aplicado
+                  </div>
+                )}
               </div>
             )}
           </div>

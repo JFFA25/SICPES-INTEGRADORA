@@ -10,11 +10,16 @@ const Payments = () => {
     const [paymentAmount, setPaymentAmount] = useState<number>(0);
     const [payments, setPayments] = useState<any[]>([]);
     const [currentMonthStatus, setCurrentMonthStatus] = useState<string | null>(null);
+    const [isProrated, setIsProrated] = useState(false);
+    const [paymentMonth, setPaymentMonth] = useState<number | null>(null);
+    const [paymentYear, setPaymentYear] = useState<number | null>(null);
+    const [paymentLabel, setPaymentLabel] = useState("MES ACTUAL");
 
     useEffect(() => {
         document.title = "Pagos";
 
         const fetchData = async () => {
+            let reservationData: any = null;
             try {
                 // SESIÓN
                 const sessionRes = await fetch(`${import.meta.env.VITE_API_URL}/api/session`, {
@@ -35,6 +40,7 @@ const Payments = () => {
 
                 if (res.ok) {
                     const data = await res.json();
+                    reservationData = data;
                     setReservation(data);
                     
                     if (data && data.estado === "aceptada") {
@@ -47,17 +53,40 @@ const Payments = () => {
                     credentials: "include",
                 });
                 if (payRes.ok) {
-                    const pData = await payRes.json();
-                    setPayments(pData);
-                    
+                        const pData = await payRes.json();
+                    const normalizedPayments = pData.map((p: any) => ({
+                        ...p,
+                        mes: Number(p.mes),
+                        anio: Number(p.anio),
+                        estado: String(p.estado || "").toLowerCase(),
+                    }));
+                    setPayments(normalizedPayments);
+
                     const today = new Date();
                     const currentMonth = today.getMonth() + 1;
                     const currentYear = today.getFullYear();
-                    
-                    // buscar si el pago de este mes ya fue solicitado o pagado
-                    const thisMonthPayment = pData.find((p: any) => p.mes === currentMonth && p.anio === currentYear);
-                    if (thisMonthPayment) {
-                        setCurrentMonthStatus(thisMonthPayment.estado);
+
+                    const currentPayment = normalizedPayments.find((p: any) => p.mes === currentMonth && p.anio === currentYear);
+                    let targetMonth = currentMonth;
+                    let targetYear = currentYear;
+                    let targetStatus = currentPayment?.estado ?? null;
+                    let label = "MES ACTUAL";
+
+                    if (currentPayment?.estado === "pagado") {
+                        targetMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+                        targetYear = currentMonth === 12 ? currentYear + 1 : currentYear;
+                        const nextPayment = normalizedPayments.find((p: any) => p.mes === targetMonth && p.anio === targetYear);
+                        targetStatus = nextPayment?.estado ?? null;
+                        label = "SIGUIENTE PAGO";
+                    }
+
+                    setPaymentMonth(targetMonth);
+                    setPaymentYear(targetYear);
+                    setPaymentLabel(label);
+                    setCurrentMonthStatus(targetStatus);
+
+                    if (reservationData && reservationData.estado === "aceptada") {
+                        calculatePayment(reservationData, targetMonth, targetYear);
                     }
                 }
             } catch {
@@ -68,40 +97,44 @@ const Payments = () => {
         fetchData();
     }, [navigate]);
 
-    const calculatePayment = (res: any) => {
+    const calculatePayment = (res: any, targetMonth?: number, targetYear?: number) => {
         const basePrice = res.tipo === "individual" ? 2000 : 1200;
         
         const dateStr = res.fecha_ingreso ? res.fecha_ingreso.split("T")[0] : "";
         if (!dateStr) {
             setPaymentAmount(basePrice);
+            setIsProrated(false);
             return;
         }
 
         const [year, month, day] = dateStr.split("-").map(Number);
         
         const today = new Date();
-        const currentMonth = today.getMonth() + 1;
-        const currentYear = today.getFullYear();
-        
+        const currentMonth = targetMonth ?? today.getMonth() + 1;
+        const currentYear = targetYear ?? today.getFullYear();
+
         if (currentYear === year && currentMonth === month) {
-            const daysInMonth = new Date(year, month, 0).getDate();
-            const daysRemaining = daysInMonth - day + 1;
-            const prorated = (basePrice / daysInMonth) * daysRemaining;
+            const weekIndex = Math.min(4, Math.max(1, Math.ceil(day / 7)));
+            const weeksRemaining = 5 - weekIndex;
+            const prorated = parseFloat(((basePrice * weeksRemaining) / 4).toFixed(2));
             setPaymentAmount(prorated);
+            setIsProrated(true);
         } else {
             setPaymentAmount(basePrice);
+            setIsProrated(false);
         }
     };
 
     const handleRequestPayment = async () => {
-        if (!reservation) return;
+        if (!reservation || !paymentMonth || !paymentYear) return;
         
-        const today = new Date();
+        const fecha_pago = `${paymentYear}-${String(paymentMonth).padStart(2, "0")}-01`;
         const body = {
             reservacion_id: reservation.id,
             monto: paymentAmount,
-            mes: today.getMonth() + 1,
-            anio: today.getFullYear()
+            fecha_pago,
+            mes: paymentMonth,
+            anio: paymentYear,
         };
         
         try {
@@ -116,9 +149,12 @@ const Payments = () => {
                 setCurrentMonthStatus("pendiente");
                 const pRes = await fetch(`${import.meta.env.VITE_API_URL}/api/payment/me`, { credentials: "include" });
                 if (pRes.ok) setPayments(await pRes.json());
+            } else {
+                const errorData = await res.json().catch(() => ({ error: "Error desconocido" }));
+                console.error("Solicitud de pago fallida:", errorData);
             }
         } catch(e) {
-            console.log(e);
+            console.error(e);
         }
     };
 
@@ -128,6 +164,14 @@ const Payments = () => {
             credentials: "include",
         });
         navigate("/login");
+    };
+
+    const isProratedPaymentRecord = (payment: any) => {
+        if (!reservation?.fecha_ingreso) return false;
+        const [year, month] = reservation.fecha_ingreso.split("T")[0].split("-").map(Number);
+        const basePrice = reservation.tipo === "individual" ? 2000 : 1200;
+        const amount = Number(payment.monto ?? payment.monto_pagado ?? 0);
+        return payment.mes === month && payment.anio === year && amount < basePrice;
     };
 
     if (!user) return null;
@@ -170,7 +214,7 @@ const Payments = () => {
                     {/* PRÓXIMO PAGO */}
                     <div className="bg-white p-8 rounded-2xl shadow-xl shadow-slate-200/40 border border-slate-100 relative overflow-hidden">
                         <div className="absolute top-0 right-0 bg-blue-50 text-blue-600 text-xs font-bold px-3 py-1 rounded-bl-lg">
-                            MES ACTUAL
+                            {paymentLabel}
                         </div>
 
                         <h3 className="font-bold text-slate-800 mb-6 text-lg">Tu Próximo Pago</h3>
@@ -187,6 +231,13 @@ const Payments = () => {
                                     <strong className="text-slate-800">1ro de c/ mes</strong>
                                 </div>
 
+                                {paymentMonth && paymentYear && (
+                                    <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                                        <span className="text-slate-500 font-medium">Periodo:</span>
+                                        <strong className="text-slate-800">{paymentMonth}/{paymentYear}</strong>
+                                    </div>
+                                )}
+
                                 <div className="flex justify-between items-center">
                                     <span className="text-slate-500 font-medium">Estado:</span>
                                     {currentMonthStatus === "pagado" ? (
@@ -197,6 +248,12 @@ const Payments = () => {
                                         <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase">Por realizar</span>
                                     )}
                                 </div>
+
+                                {isProrated && (
+                                    <div className="inline-flex items-center rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700 uppercase tracking-wide">
+                                        Prorrateo aplicado
+                                    </div>
+                                )}
 
                                 {!currentMonthStatus ? (
                                     <button onClick={handleRequestPayment} className="w-full mt-6 bg-green-600 text-white font-semibold py-3 rounded-xl hover:bg-green-700 hover:-translate-y-0.5 transition-all shadow-md focus:ring-4 focus:ring-green-500/30">
@@ -239,7 +296,12 @@ const Payments = () => {
                                     <div key={p.id} className="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-100 transition hover:border-slate-200">
                                         <div>
                                             <p className="font-bold text-slate-700">{formatter.format(p.monto)}</p>
-                                            <p className="text-xs text-slate-500 font-medium mt-0.5">Periodo: {p.mes}/{p.anio}</p>
+                                            <p className="text-xs text-slate-500 font-medium mt-0.5">
+                                                Periodo: {p.mes}/{p.anio} {p.tipo_pago === "prorrateo" ? "· Prorrateo" : ""}
+                                            </p>
+                                            {isProratedPaymentRecord(p) && (
+                                                <p className="text-xs text-sky-700 font-semibold mt-1 uppercase tracking-wide">Prorrateado</p>
+                                            )}
                                         </div>
                                         <div>
                                             {p.estado === "pagado" ? (

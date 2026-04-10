@@ -55,15 +55,25 @@ const AdminPayments = () => {
     }
   };
 
+  const normalizedPayments = payments.map((payment) => ({
+    ...payment,
+    estado: String(payment.estado || "").toLowerCase(),
+  }));
+
   const counts = {
-    Todas: payments.length,
-    Pendiente: payments.filter((p) => p.estado === "pendiente").length,
-    Aprobado: payments.filter((p) => p.estado === "aprobado").length,
-    Rechazado: payments.filter((p) => p.estado === "rechazado").length,
+    Todas: normalizedPayments.length,
+    Pendiente: normalizedPayments.filter((p) => p.estado === "pendiente").length,
+    Aprobado: normalizedPayments.filter((p) => p.estado === "pagado").length,
+    Rechazado: normalizedPayments.filter((p) => p.estado === "rechazado" || p.estado === "atrasado").length,
   };
 
-  const filteredPayments = payments.filter((payment) => {
-    const statusMatch = filter === "Todas" || payment.estado === filter.toLowerCase();
+  const filteredPayments = normalizedPayments.filter((payment) => {
+    const statusMatch =
+      filter === "Todas" ||
+      (filter === "Pendiente" && payment.estado === "pendiente") ||
+      (filter === "Aprobado" && payment.estado === "pagado") ||
+      (filter === "Rechazado" && payment.estado === "atrasado");
+
     const searchValue = `${payment.nombre || ""} ${payment.email || ""} ${payment.id || ""} ${payment.estado || ""}`.toLowerCase();
     return statusMatch && searchValue.includes(searchTerm.toLowerCase());
   });
@@ -72,9 +82,9 @@ const AdminPayments = () => {
     switch (estado) {
       case "pendiente":
         return "bg-yellow-100 text-yellow-800";
-      case "aprobado":
+      case "pagado":
         return "bg-green-100 text-green-800";
-      case "rechazado":
+      case "atrasado":
         return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
@@ -204,25 +214,25 @@ const AdminPayments = () => {
                         <div className="text-xs text-slate-500">{payment.email}</div>
                       </td>
                       <td className="px-4 py-4 text-sm text-slate-700">{payment.mes}/{payment.anio}</td>
-                      <td className="px-4 py-4 text-sm text-slate-700">${payment.monto.toLocaleString('es-MX')}</td>
+                      <td className="px-4 py-4 text-sm text-slate-700">${(payment.monto ?? payment.monto_pagado ?? 0).toLocaleString('es-MX')}</td>
                       <td className="px-4 py-4">
                         <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(payment.estado)}`}>
                           {payment.estado.charAt(0).toUpperCase() + payment.estado.slice(1)}
                         </span>
                       </td>
-                      <td className="px-4 py-4 text-sm text-slate-500">{new Date(payment.creado_en).toLocaleDateString('es-MX')}</td>
+                      <td className="px-4 py-4 text-sm text-slate-500">{payment.creado_en ? new Date(payment.creado_en).toLocaleDateString('es-MX') : '-'}</td>
                       <td className="px-4 py-4 text-sm font-medium space-x-2">
                         {payment.estado === 'pendiente' ? (
                           <>
                             <button
-                              onClick={() => updatePaymentStatus(payment.id, 'aprobado')}
-                              className="rounded-full bg-emerald-600 px-3 py-1 text-white text-xs font-semibold transition hover:bg-emerald-700"
+                              onClick={() => updatePaymentStatus(payment.id, 'pagado')}
+                              className="text-xs bg-white border border-green-200 text-green-600 hover:bg-green-50 px-3 py-1.5 rounded-full font-semibold transition"
                             >
                               Aprobar
                             </button>
                             <button
                               onClick={() => updatePaymentStatus(payment.id, 'rechazado')}
-                              className="rounded-full bg-red-100 px-3 py-1 text-red-700 text-xs font-semibold transition hover:bg-red-200"
+                              className="text-xs bg-white border border-red-200 text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-full font-semibold transition"
                             >
                               Rechazar
                             </button>
