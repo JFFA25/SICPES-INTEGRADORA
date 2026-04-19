@@ -61,7 +61,7 @@ const AdminPayments = () => {
   }));
 
   const counts = {
-    Todas: normalizedPayments.length,
+    Total: normalizedPayments.length,
     Pendiente: normalizedPayments.filter((p) => p.estado === "pendiente").length,
     Aprobado: normalizedPayments.filter((p) => p.estado === "pagado").length,
     Rechazado: normalizedPayments.filter((p) => p.estado === "rechazado" || p.estado === "atrasado").length,

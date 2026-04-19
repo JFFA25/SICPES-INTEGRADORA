@@ -1,7 +1,7 @@
 const db = require("../database/db");
 
 const getRooms = (req, res) => {
-  const sql = "SELECT piso, GROUP_CONCAT(habitacion ORDER BY habitacion ASC SEPARATOR ', ') AS habitaciones FROM tbd_habitaciones GROUP BY piso ORDER BY piso ASC";
+  const sql = "SELECT piso, GROUP_CONCAT(habitacion ORDER BY habitacion ASC SEPARATOR ', ') AS habitaciones FROM tbi_habitaciones GROUP BY piso ORDER BY piso ASC";
   db.query(sql, (err, results) => {
     if (err) return res.status(500).json({ error: "Error en el servidor" });
     
