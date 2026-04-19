@@ -48,8 +48,10 @@ Facilitar y estandarizar el proceso de alojamiento estudiantil mediante un siste
 ## Identidad gráfica
 Logo del proyecto:
 
-<img src="/frontend/src/assets/images/SICPES_Empresa.png" alt="Logo Empresa" width="300"/>
-<img src="/frontend/src/assets/images/SICPES_Producto.png" alt="Logo Producto" width="300"/>
+
+  <img src="/frontend/src/assets/images/SICPES_Empresa.png" alt="Logo Empresa" width="300" style="margin-right: 20px;"/>
+  <img src="/frontend/src/assets/images/SICPES_Producto.png" alt="Logo Producto" width="300"/>
+
 
 ## Paleta de colores
 ![Colores](/frontend/src/assets/images/colors_scipes.png) 
