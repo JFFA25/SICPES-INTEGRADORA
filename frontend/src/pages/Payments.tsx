@@ -115,8 +115,7 @@ const Payments = () => {
 
         if (currentYear === year && currentMonth === month) {
             const weekIndex = Math.min(4, Math.max(1, Math.ceil(day / 7)));
-            const weeksRemaining = 5 - weekIndex;
-            const prorated = parseFloat(((basePrice * weeksRemaining) / 4).toFixed(2));
+            const prorated = parseFloat(((basePrice / 4) * weekIndex).toFixed(2));
             setPaymentAmount(prorated);
             setIsProrated(true);
         } else {

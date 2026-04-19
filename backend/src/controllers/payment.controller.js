@@ -50,13 +50,24 @@ const requestPayment = (req, res) => {
         }
       }
 
-      const isProrated = startYear === anioNumber && startMonth === mesNumber;
+      const isProratedCondition = startYear === anioNumber && startMonth === mesNumber;
       const weekIndex = Math.min(4, Math.max(1, Math.ceil(startDay / 7)));
-      const weeksRemaining = 5 - weekIndex;
-      const montoCalculado = isProrated
-        ? parseFloat(((basePrice * weeksRemaining) / 4).toFixed(2))
-        : basePrice;
-      const tipo_pago = isProrated ? "prorrateo" : "mensual";
+      
+      // La regla de negocio solicitada para cobrar por semana de llegada (1=300, 2=600, 3=900, 4=1200)
+      const montoProrrateado = (basePrice / 4) * weekIndex;
+
+      // Consultar si es la primera vez que ests usuario paga históricamente 
+      db.query(
+        `SELECT COUNT(*) AS pagosPrevios FROM tbd_pagos WHERE reservacion_id IN (SELECT id FROM tbd_reservaciones WHERE usuario_id = ?)`,
+        [reservation.usuario_id],
+        (errPagos, resultPagos) => {
+          if (errPagos) return res.status(500).json({ error: "Error verificando historial" });
+
+          const esPrimerPagoHistorico = resultPagos[0].pagosPrevios === 0;
+          const isProrated = isProratedCondition && esPrimerPagoHistorico;
+
+          const montoCalculado = isProrated ? parseFloat(montoProrrateado.toFixed(2)) : basePrice;
+          const tipo_pago = isProrated ? "prorrateo" : "mensual";
 
       findPaymentByReservationPeriod(reservacion_id, mesNumber, anioNumber, (err2, existing) => {
         if (err2) {
@@ -118,6 +129,8 @@ const requestPayment = (req, res) => {
           }
         });
       });
+        } // Fin del callback de db.query(pagos previos)
+      );
     }
   );
 };

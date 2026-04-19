@@ -38,9 +38,8 @@ const Dashboard = () => {
       const currentYear = targetYear ?? today.getFullYear();
 
       if (currentYear === year && currentMonth === month) {
-        const daysInMonth = new Date(year, month, 0).getDate();
-        const daysRemaining = daysInMonth - day + 1;
-        const prorated = (basePrice / daysInMonth) * daysRemaining;
+        const weekIndex = Math.min(4, Math.max(1, Math.ceil(day / 7)));
+        const prorated = (basePrice / 4) * weekIndex;
         setPaymentAmount(prorated);
         setIsProrated(true);
       } else {

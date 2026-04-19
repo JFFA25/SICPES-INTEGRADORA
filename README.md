@@ -45,8 +45,7 @@ Facilitar y estandarizar el proceso de alojamiento estudiantil mediante un siste
 | Entorno          | Dotenv ![Dotenv](https://img.shields.io/badge/dotenv-ECD53F.svg?style=for-the-badge&logo=dotenv&logoColor=black) |
 | Documentación    | Markdown ![Markdown](https://img.shields.io/badge/markdown-%23000000.svg?style=for-the-badge&logo=markdown&logoColor=white)  |
 
-## Identidad gráfica
-Logo del proyecto:
+## Logos del Proyecto
 
 <p align="center">
   <img src="/frontend/src/assets/images/SICPES_Empresa.png" alt="Logo Empresa" width="300" style="margin-right: 20px;"/>

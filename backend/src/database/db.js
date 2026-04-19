@@ -8,7 +8,7 @@ const connection = mysql.createConnection({
   port: process.env.DB_PORT,
 });
 
-// 🔥 MENSAJE DE CONEXIÓN
+// MENSAJE DE CONEXIÓN
 connection.connect((err) => {
   if (err) {
     console.error("Error al conectar a MySQL:", err.message);

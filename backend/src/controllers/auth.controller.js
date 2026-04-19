@@ -1,6 +1,7 @@
 const { createUser } = require("../models/user.model");
-const { sendConfirmationEmail } = require("../utils/mailer");
+const { sendConfirmationEmail, sendForgotPasswordEmail } = require("../utils/mailer");
 const crypto = require("crypto");
+const bcrypt = require("bcrypt");
 
 
 const loginUser = (req, res) => {
@@ -32,12 +33,15 @@ const loginUser = (req, res) => {
 
     const user = results[0];
 
-    // CONTRASEÑA INCORRECTA (temporal)
-    if (user.password !== password) {
-      return res.status(400).json({
-        error: "Correo o contraseña incorrectos",
-      });
-    }
+    // COMPROBAR CONTRASEÑA EN TEXTO PLANO O CON BCRYPT
+    bcrypt.compare(password, user.password, (errBcrypt, isMatch) => {
+      const isValid = user.password === password || isMatch;
+
+      if (!isValid) {
+        return res.status(400).json({
+          error: "Correo o contraseña incorrectos",
+        });
+      }
 
     // NO CONFIRMADO
     if (!user.confirmado) {
@@ -70,6 +74,7 @@ const loginUser = (req, res) => {
         });
       });
     });
+    }); // FIN BCRYPT COMPARE
   });
 };
 
@@ -85,6 +90,11 @@ const getSession = (req, res) => {
 
 const registerUser = async (req, res) => {
   const { nombre, email, password } = req.body;
+
+  // VALIDACIÓN DE CAMPOS VACÍOS
+  if (!nombre || !email || !password || nombre.trim() === "" || email.trim() === "" || password.trim() === "") {
+    return res.status(400).json({ error: "Todos los campos son obligatorios" });
+  }
 
   // generar token
   const token = crypto.randomBytes(20).toString("hex");
@@ -141,4 +151,58 @@ const logoutUser = (req, res) => {
   });
 };
 
-module.exports = { loginUser, registerUser, confirmUser, getSession, logoutUser };
+const forgotPassword = (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Email requerido" });
+
+  db.query("SELECT * FROM tbd_usuarios WHERE email = ?", [email], async (err, results) => {
+    if (err) return res.status(500).json({ error: "Error interno" });
+    if (results.length === 0) return res.status(400).json({ error: "Si el correo existe, recibirás un enlace." }); // Mensaje ambiguo de seguridad
+
+    const token = crypto.randomBytes(20).toString("hex");
+    
+    db.query("UPDATE tbd_usuarios SET token = ? WHERE email = ?", [token, email], async (err2) => {
+      if (err2) return res.status(500).json({ error: "Error generando token" });
+
+      try {
+        await sendForgotPasswordEmail(email, token);
+        res.json({ message: "Si el correo existe, recibirás un enlace de recuperación." });
+      } catch (e) {
+        res.status(500).json({ error: "Error enviando correo" });
+      }
+    });
+  });
+};
+
+const resetPassword = (req, res) => {
+  const { token } = req.params;
+  const { newPassword } = req.body;
+
+  if (!newPassword || newPassword.length < 8) {
+    return res.status(400).json({ error: "La contraseña debe tener mínimo 8 caracteres." });
+  }
+
+  db.query("SELECT * FROM tbd_usuarios WHERE token = ?", [token], async (err, results) => {
+    if (err) return res.status(500).json({ error: "Error interno" });
+    if (results.length === 0) return res.status(400).json({ error: "Token inválido o expirado." });
+    
+    const user = results[0];
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    db.query("UPDATE tbd_usuarios SET password = ?, token = NULL WHERE id = ?", [hashedPassword, user.id], (err2) => {
+      if (err2) return res.status(500).json({ error: "Error actualizando contraseña" });
+      res.json({ message: "Contraseña actualizada correctamente" });
+    });
+  });
+};
+
+const checkResetToken = (req, res) => {
+  const { token } = req.params;
+  db.query("SELECT * FROM tbd_usuarios WHERE token = ?", [token], (err, results) => {
+    if (err) return res.status(500).json({ error: "Error interno" });
+    if (results.length === 0) return res.status(400).json({ error: "Token inválido o expirado." });
+    res.json({ message: "Token válido" });
+  });
+};
+
+module.exports = { loginUser, registerUser, confirmUser, getSession, logoutUser, forgotPassword, resetPassword, checkResetToken };
