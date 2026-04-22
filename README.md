@@ -76,10 +76,10 @@ SICPES es una innovadora plataforma web diseñada para proporcionar a los estudi
 
 ## Nuestro Equipo
 
-| Foto | Desarrollador | Rol | GitHub |
-| :---: | :--- | :--- | :--- |
-| <img src="/frontend/src/assets/images/jose_flores.jpg" width="60" height="60" style="border-radius: 50%; object-fit: cover;"/> | **Jose Francisco Flores Amador** | Líder de Proyecto / Fullstack / Documentación | [@JFFA25](https://github.com/JFFA25) |
-| <img src="/frontend/src/assets/images/edgar_cabrera.jpg" width="60" height="60" style="border-radius: 50%; object-fit: cover;"/> | **Edgar Cabrera Velázquez** | Backend / Lógica del sistema | [@Edgar-Cbr](https://github.com/Edgar-Cbr) |
-| <img src="/frontend/src/assets/images/edwin_hernandez.jpg" width="60" height="60" style="border-radius: 50%; object-fit: cover;"/> | **Edwin Hernández Campos** | Base de datos / Estructura | [@Edwinhdzcm](https://github.com/Edwinhdzcm) |
-| <img src="/frontend/src/assets/images/giovany_pazos.jpg" width="60" height="60" style="border-radius: 50%; object-fit: cover;"/> | **Giovany Raul Pazos Cruz** | Frontend / Interfaz | [@giova0412](https://github.com/giova0412) |
-| <img src="/frontend/src/assets/images/uriel_maldonado.jpg" width="60" height="60" style="border-radius: 50%; object-fit: cover;"/> | **Uriel Maldonado Bernabe** | Pruebas / Soporte / Documentación | [@Urii7895](https://github.com/Urii7895) |
+| Desarrollador | Rol | GitHub |
+| :--- | :--- | :--- |
+| **Jose Francisco Flores Amador** | Líder de Proyecto / Fullstack / Documentación | [@JFFA25](https://github.com/JFFA25) |
+| **Edgar Cabrera Velázquez** | Backend / Lógica del sistema | [@Edgar-Cbr](https://github.com/Edgar-Cbr) |
+| **Edwin Hernández Campos** | Base de datos / Estructura | [@Edwinhdzcm](https://github.com/Edwinhdzcm) |
+| **Giovany Raul Pazos Cruz** | Frontend / Interfaz | [@giova0412](https://github.com/giova0412) |
+| **Uriel Maldonado Bernabe** | Pruebas / Soporte / Documentación | [@Urii7895](https://github.com/Urii7895) |
