@@ -136,6 +136,22 @@ const updateSettings = (req, res) => {
   res.json({ message: "Configuraciones actualizadas" });
 };
 
+// GENERAR DATOS DE PRUEBA (MOCK DATA)
+const generateMockData = (req, res) => {
+  if (!req.session.user || req.session.user.rol !== "admin") {
+    return res.status(403).json({ error: "Acceso denegado" });
+  }
+
+  const { cantidad = 10, estado_reservacion = null, estado_pago = null, motivo_rechazo = null } = req.body;
+
+  // Si los valores vienen vacíos o undefined, se mandan como null para que el SP los aleatorice
+  const sql = "CALL sp_generar_lote_hibrido(?, ?, ?, ?)";
+  db.query(sql, [cantidad, estado_reservacion, estado_pago, motivo_rechazo], (err) => {
+    if (err) return res.status(500).json({ error: "Error al generar datos", details: err.message });
+    res.json({ message: `Se generaron ${cantidad} registros exitosamente.` });
+  });
+};
+
 module.exports = {
   getAllReservations,
   updateReservationStatus,
@@ -143,5 +159,6 @@ module.exports = {
   updatePaymentStatus,
   getSettings,
   getPublicSettings,
-  updateSettings
+  updateSettings,
+  generateMockData
 };
