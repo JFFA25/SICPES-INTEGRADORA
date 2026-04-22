@@ -229,7 +229,7 @@ const AdminReservations = () => {
                             className="w-16 px-2 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                           >
                             <option value="" disabled>Piso</option>
-                            {[1, 2].map((num) => (
+                            {[1, 2, 3].map((num) => (
                               <option key={num} value={num.toString()}>{num}</option>
                             ))}
                           </select>

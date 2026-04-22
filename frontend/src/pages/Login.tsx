@@ -34,6 +34,11 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!form.email.trim() || !form.password.trim()) {
+      setError("Todos los campos son obligatorios.");
+      return;
+    }
+
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/login`, {
         method: "POST",
@@ -167,9 +172,9 @@ const Login = () => {
             </Link>
           </p>
 
-          <p className="text-green-600 mt-2 cursor-pointer hover:underline">
+          <Link to="/forgot-password" className="text-green-600 mt-2 block cursor-pointer hover:underline">
             ¿Olvidaste tu contraseña?
-          </p>
+          </Link>
         </div>
 
       </div>

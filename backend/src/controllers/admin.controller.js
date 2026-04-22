@@ -13,10 +13,11 @@ const getAllReservations = (req, res) => {
   }
 
   const sql = `
-    SELECT r.*, u.nombre, u.email
-    FROM tbd_reservaciones r
+    SELECT p.*, p.monto_pagado AS monto, u.nombre, u.email, MONTH(p.fecha_pago) AS mes, YEAR(p.fecha_pago) AS anio
+    FROM tbd_pagos p
+    JOIN tbd_reservaciones r ON p.reservacion_id = r.id
     JOIN tbd_usuarios u ON r.usuario_id = u.id
-    ORDER BY r.creado_en DESC
+    ORDER BY p.fecha_pago DESC
   `;
 
   db.query(sql, (err, results) => {
@@ -58,10 +59,11 @@ const getAllPayments = (req, res) => {
   }
 
   const sql = `
-    SELECT p.*, u.nombre, u.email
+    SELECT p.*, u.nombre, u.email, MONTH(p.fecha_pago) AS mes, YEAR(p.fecha_pago) AS anio
     FROM tbd_pagos p
-    JOIN tbd_usuarios u ON p.usuario_id = u.id
-    ORDER BY p.creado_en DESC
+    JOIN tbd_reservaciones r ON p.reservacion_id = r.id
+    JOIN tbd_usuarios u ON r.usuario_id = u.id
+    ORDER BY p.fecha_pago DESC
   `;
 
   db.query(sql, (err, results) => {
@@ -79,8 +81,22 @@ const updatePaymentStatus = (req, res) => {
   const { id } = req.params;
   const { estado } = req.body;
 
+  const normalized = String(estado || "").toLowerCase();
+  const statusMap = {
+    pendiente: "Pendiente",
+    aprobado: "Pagado",
+    pagado: "Pagado",
+    rechazado: "Atrasado",
+    atrasado: "Atrasado",
+  };
+
+  const dbEstado = statusMap[normalized];
+  if (!dbEstado) {
+    return res.status(400).json({ error: "Estado de pago inválido" });
+  }
+
   const sql = "UPDATE tbd_pagos SET estado = ? WHERE id = ?";
-  db.query(sql, [estado, id], (err) => {
+  db.query(sql, [dbEstado, id], (err) => {
     if (err) return res.status(500).json({ error: "Error en el servidor" });
     res.json({ message: "Pago actualizado" });
   });
@@ -120,6 +136,22 @@ const updateSettings = (req, res) => {
   res.json({ message: "Configuraciones actualizadas" });
 };
 
+// GENERAR DATOS DE PRUEBA (MOCK DATA)
+const generateMockData = (req, res) => {
+  if (!req.session.user || req.session.user.rol !== "admin") {
+    return res.status(403).json({ error: "Acceso denegado" });
+  }
+
+  const { cantidad = 10, estado_reservacion = null, estado_pago = null, motivo_rechazo = null } = req.body;
+
+  // Si los valores vienen vacíos o undefined, se mandan como null para que el SP los aleatorice
+  const sql = "CALL sp_generar_lote_hibrido(?, ?, ?, ?)";
+  db.query(sql, [cantidad, estado_reservacion, estado_pago, motivo_rechazo], (err) => {
+    if (err) return res.status(500).json({ error: "Error al generar datos", details: err.message });
+    res.json({ message: `Se generaron ${cantidad} registros exitosamente.` });
+  });
+};
+
 module.exports = {
   getAllReservations,
   updateReservationStatus,
@@ -127,5 +159,6 @@ module.exports = {
   updatePaymentStatus,
   getSettings,
   getPublicSettings,
-  updateSettings
+  updateSettings,
+  generateMockData
 };

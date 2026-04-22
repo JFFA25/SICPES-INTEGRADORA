@@ -11,6 +11,8 @@ import AdminReservations from "./pages/AdminReservation";
 import AdminSettings from "./pages/AdminSettings";
 import AdminPayments from "./pages/AdminPayments";
 import Error from "./pages/Error";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 function App() {
   return (
@@ -19,6 +21,8 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/reservation" element={<Reservation />} />

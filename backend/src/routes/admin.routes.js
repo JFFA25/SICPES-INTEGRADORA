@@ -6,7 +6,8 @@ const {
   getAllPayments,
   updatePaymentStatus,
   getSettings,
-  updateSettings
+  updateSettings,
+  generateMockData
 } = require("../controllers/admin.controller");
 
 // Rutas de reservaciones admin
@@ -20,5 +21,8 @@ router.put("/payments/:id", updatePaymentStatus);
 // Rutas de configuraciones admin
 router.get("/settings", getSettings);
 router.put("/settings", updateSettings);
+
+// Ruta para generación de datos (Mocks)
+router.post("/generate-data", generateMockData);
 
 module.exports = router;
