@@ -25,6 +25,50 @@ src/
 | `database/` | Configuración de conexión y scripts SQL |
 | `utils/` | Funciones helper (email, helpers varios) |
 
+## Subcarpetas Detalladas
+
+### `routes/` - Rutas API
+Archivos que definen los endpoints del servidor y los mapean a los controladores correspondientes.
+
+| Archivo | Descripción |
+|---------|-------------|
+| `auth.routes.js` | Rutas de autenticación (login, register, logout) |
+| `reservation.routes.js` | Rutas para gestión de reservaciones |
+| `payment.routes.js` | Rutas para procesamiento de pagos |
+| `room.routes.js` | Rutas para consulta de habitaciones y pisos |
+| `admin.routes.js` | Rutas del panel de administración |
+
+### `models/` - Modelos de Datos
+Consultas SQL y funciones de acceso a la base de datos.
+
+- `user.model.js` - Operaciones de usuarios
+- `reservation.model.js` - Operaciones de reservaciones
+- `payment.model.js` - Operaciones de pagos
+- `quota.model.js` - Gestión de prorrateos/mensualidades
+
+### `middlewares/` - Middlewares
+Funciones intermedias que se ejecutan antes de los controladores.
+
+- `auth.middleware.js` - Validación de sesión y roles de usuario
+
+### `database/` - Base de Datos
+- `db.js` - Conexión a MySQL mediante mysql2
+- `SQL/` - Scripts, estructura, backups y diccionario de datos
+
+### `utils/` - Utilidades
+- `mailer.js` - Configuración de Nodemailer para envío de correos
+
+### `controllers/` - Controladores
+Lógica de negocio del sistema. Cada archivo maneja un dominio específico.
+
+- `admin.controller.js` - Funciones del panel de administrador
+- `auth.controller.js` - Autenticación y sesiones de usuarios
+- `payment.controller.js` - Procesamiento de pagos
+- `reservation.controller.js` - Gestión de reservaciones
+- `room.controller.js` - Inventario de habitaciones
+
+> **Nota**: Para documentación detallada de cada controlador, consulta [`controllers/README.md`](./controllers/README.md)
+
 ## Flujo de una Solicitud
 
 ```
