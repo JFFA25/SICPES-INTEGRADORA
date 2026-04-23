@@ -69,6 +69,73 @@ Lógica de negocio del sistema. Cada archivo maneja un dominio específico.
 
 > **Nota**: Para documentación detallada de cada controlador, consulta [`controllers/README.md`](./controllers/README.md)
 
+## Endpoints API Principales
+
+### Autenticación
+- `POST /api/auth/register` - Registro de nuevo usuario
+- `POST /api/auth/login` - Inicio de sesión
+- `POST /api/auth/logout` - Cierre de sesión
+- `GET /api/auth/checkSession` - Verificar sesión activa
+
+### Reservaciones
+- `GET /api/reservations` - Listar reservaciones del usuario
+- `POST /api/reservations` - Crear nueva reservación
+- `DELETE /api/reservations/:id` - Cancelar reservación
+
+### Pagos
+- `POST /api/payment/process` - Procesar pago
+- `GET /api/payment/history` - Historial de pagos
+- `GET /api/payment/quotas` - Listar mensualidades
+
+### Habitaciones
+- `GET /api/rooms/floors` - Listar todos los pisos
+- `GET /api/rooms/available` - Listar habitaciones disponibles
+
+### Administración
+- `GET /api/admin/reservations` - Todas las reservaciones
+- `PUT /api/admin/reservations/:id/status` - Actualizar estado
+- `GET /api/admin/users` - Listar usuarios
+- `GET /api/admin/stats` - Estadísticas del sistema
+- `GET /api/admin/settings` - Configuraciones globales
+- `PUT /api/admin/settings` - Actualizar configuraciones
+
+## Middlewares
+
+### `auth.middleware.js`
+Protege las rutas verificando la sesión del usuario.
+
+```javascript
+// Verifica que exista sesión
+const requireAuth = (req, res, next) => {
+  if (!req.session.user) {
+    return res.status(401).json({ error: 'No autorizado' });
+  }
+  next();
+};
+
+// Verifica que sea administrador
+const requireAdmin = (req, res, next) => {
+  if (!req.session.user || req.session.user.rol !== 'admin') {
+    return res.status(403).json({ error: 'Acceso denegado' });
+  }
+  next();
+};
+```
+
+## Conexión a Base de Datos
+
+La conexión se encuentra en `database/db.js` y utiliza el patrón singleton:
+
+```javascript
+const mysql = require('mysql2/promise');
+const pool = mysql.createPool({...});
+module.exports = pool;
+```
+
+## Configuración de Sesión
+
+Express-session está configurado en `app.js` con opciones de seguridad básicas.
+
 ## Flujo de una Solicitud
 
 ```
