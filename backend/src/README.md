@@ -1,4 +1,9 @@
-# Código Fuente (src/)
+# Código Fuente (src/) - Backend SICPES
+
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Express](https://img.shields.io/badge/Express.js-%23404d59.svg?style=for-the-badge&logo=express&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
+![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
 
 Esta carpeta contiene todo el código fuente del backend de SICPES.
 
@@ -136,10 +141,82 @@ module.exports = pool;
 
 Express-session está configurado en `app.js` con opciones de seguridad básicas.
 
-## Flujo de una Solicitud
+## Modelos de Datos
 
+Cada modelo encapsula las consultas SQL relacionadas con una entidad.
+
+### `user.model.js`
+```javascript
+getUserById(id)           // Obtener usuario por ID
+getUserByEmail(email)     // Buscar usuario por email
+createUser(data)          // Crear nuevo usuario
+updateUser(id, data)      // Actualizar usuario
+deleteUser(id)            // Eliminar usuario
 ```
-Cliente → Routes → Middlewares → Controllers → Models → Base de Datos
-                ↑                                              ↓
-                └──────────── Respuesta JSON ←─────────────────┘
+
+### `reservation.model.js`
+```javascript
+getReservationsByUser(userId)    // Reservaciones de un usuario
+getAllReservations()             // Todas las reservaciones (admin)
+createReservation(data)          // Crear reservación
+updateReservationStatus(id, status)  // Actualizar estado
+cancelReservation(id)            // Cancelar reservación
 ```
+
+### `payment.model.js`
+```javascript
+getPaymentsByUser(userId)        // Pagos de un usuario
+createPayment(data)              // Registrar pago
+getPaymentHistory()              // Historial completo (admin)
+```
+
+### `quota.model.js`
+```javascript
+getAllQuotas()                   // Listar todas las mensualidades
+getQuotaById(id)                 // Obtener prorrateo por ID
+createQuota(data)                // Crear prorrateo
+updateQuota(id, data)            // Actualizar prorrateo
+```
+
+## Cómo Agregar Nuevo Endpoint
+
+1. **Crear función en el modelo** (`models/*.model.js`)
+2. **Crear función en el controlador** (`controllers/*.controller.js`)
+3. **Definir la ruta** (`routes/*.routes.js`)
+4. **Registrar en app.js**
+
+## Cómo Agregar Nueva Ruta
+
+1. Crear la función en el modelo correspondiente
+2. Crear el controlador que use ese modelo
+3. Definir la ruta en el archivo de rutas
+4. Importar y usar la ruta en app.js
+
+## Utilidades
+
+### `utils/mailer.js`
+Módulo de envío de correos electróncos utilizando Nodemailer.
+
+```javascript
+const mailer = require('./utils/mailer');
+
+await mailer.sendEmail({
+  to: 'usuario@email.com',
+  subject: 'Confirmación de reservación',
+  html: '<h1>Tu reservación fue confirmada</h1>'
+});
+```
+
+## Contribución
+
+Para agregar nuevas funcionalidades:
+
+1. Crea una nueva rama: `git checkout -b feature/nueva-funcionalidad`
+2. Realiza tus cambios siguiendo la arquitectura existente
+3. Asegúrate de seguir el patrón de modelos → controladores → rutas
+4. Agrega pruebas si es necesario
+5. Haz commit y push a tu rama
+
+## Licencia
+
+ISC
