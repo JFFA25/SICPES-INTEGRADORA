@@ -76,3 +76,4 @@ import hero from '../assets/hero.png';
 3. **Edwin Hernández Campos** /[@Edwinhdzcm](https://github.com/Edwinhdzcm)
 4. **Giovany Raul Pazos Cruz** /[@giova0412](https://github.com/giova0412)
 5. **Uriel Maldonado Bernabe** /[@Urii7895](https://github.com/Urii7895)
+  
