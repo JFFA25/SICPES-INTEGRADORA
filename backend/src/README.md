@@ -13,7 +13,7 @@ Esta carpeta contiene el núcleo del servidor de SICPES, organizado bajo una arq
 | `routes/` | Definición de endpoints API | [README](./routes/README.md) |
 | `models/` | Consultas SQL y acceso a datos | [README](./models/README.md) |
 | `middlewares/` | Seguridad y control de acceso | [README](./middlewares/README.md) |
-| `database/` | Conexión y scripts de base de datos | [README](./database/SQL/README.md) |
+| `database/` | Conexión y scripts de base de datos | [README](./database/README.md) |
 | `utils/` | Herramientas auxiliares (Mailer) | [README](./utils/README.md) |
 
 ## Flujo de Trabajo
