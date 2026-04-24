@@ -62,6 +62,8 @@ const Register = () => {
   // SUBMIT
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+    setSuccess("");
 
     if (!form.nombre.trim() || !form.email.trim() || !form.password.trim()) {
       setError("Todos los campos son obligatorios.");

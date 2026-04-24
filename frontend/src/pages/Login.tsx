@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import icon from "../assets/images/icon.ico";
+import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
   useEffect(() => {
     document.title = "Login";
   }, []);
-
-  const navigate = useNavigate();
 
   // ESTADOS
   const [form, setForm] = useState({
@@ -21,13 +23,8 @@ const Login = () => {
   // INPUTS
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-
-    setForm({
-      ...form,
-      [name]: value,
-    });
-
-    setError(""); // limpiar error al escribir
+    setForm({ ...form, [name]: value });
+    setError(""); 
   };
 
   // SUBMIT
@@ -40,72 +37,65 @@ const Login = () => {
     }
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/login`, {
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+      const res = await fetch(`${apiUrl}/api/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // incluir cookies
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error);
+        setError(data.error || data.detail || "Credenciales incorrectas");
         return;
       }
 
-      // CONSEGUIR SESION ACTUAL PARA VER ROL Y REDIRIGIR AL LUGAR CORRECTO
-      const sessionRes = await fetch(`${import.meta.env.VITE_API_URL}/api/session`, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
+      const token = data.access_token;
+      
+      // Validar sesión y obtener datos del usuario
+      const sessionRes = await fetch(`${apiUrl}/api/session`, {
+        headers: { "Authorization": `Bearer ${token}` },
       });
 
       if (sessionRes.ok) {
         const sessionData = await sessionRes.json();
         
+        login({
+          id: sessionData.id,
+          nombre: sessionData.nombre,
+          email: sessionData.sub,
+          rol: sessionData.rol
+        }, token);
+
+        // Redirección basada en rol
         if (sessionData.rol === "admin") {
           navigate("/admin/reservations");
         } else {
           navigate("/dashboard");
         }
       } else {
-        navigate("/dashboard"); // Fallback
+        setError("Error al validar la sesión del usuario.");
       }
 
-    } catch (error) {
-      setError("Error al conectar con el servidor");
+    } catch (err) {
+      setError("Error al conectar con el servidor central.");
+      console.error(err);
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-200 animate-page-transition">
-
       <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md text-center">
-
-        {/* ICONO */}
         <div className="flex justify-center mb-4">
           <Link to="/">
-            <img
-              src={icon}
-              alt="icono"
-              className="w-16 cursor-pointer"
-            />
+            <img src={icon} alt="icono" className="w-16 cursor-pointer" />
           </Link>
         </div>
 
-        {/* TÍTULO */}
-        <h2 className="text-2xl font-bold text-green-600 mb-6">
-          Inicia sesión
-        </h2>
+        <h2 className="text-2xl font-bold text-green-600 mb-6">Inicia sesión</h2>
 
-        {/* FORM */}
         <form onSubmit={handleSubmit} className="space-y-4 text-left">
-
-          {/* CORREO */}
           <div>
             <label className="text-green-600 font-medium">Correo</label>
             <input
@@ -120,10 +110,8 @@ const Login = () => {
             />
           </div>
 
-          {/* CONTRASEÑA */}
           <div>
             <label className="text-green-600 font-medium">Contraseña</label>
-
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -135,8 +123,6 @@ const Login = () => {
                   error ? "border-red-500 focus:ring-red-400" : "border-green-500 focus:ring-green-400"
                 }`}
               />
-
-              {/* BOTÓN VER */}
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
@@ -147,14 +133,8 @@ const Login = () => {
             </div>
           </div>
 
-          {/* ERROR */}
-          {error && (
-            <p className="text-red-500 text-sm text-center">
-              {error}
-            </p>
-          )}
+          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
-          {/* BOTÓN */}
           <button
             type="submit"
             className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition"
@@ -163,20 +143,10 @@ const Login = () => {
           </button>
         </form>
 
-        {/* LINKS */}
         <div className="mt-4 text-sm">
-          <p>
-            ¿No tienes una cuenta?{" "}
-            <Link to="/register" className="text-green-600 hover:underline">
-              Regístrate
-            </Link>
-          </p>
-
-          <Link to="/forgot-password" className="text-green-600 mt-2 block cursor-pointer hover:underline">
-            ¿Olvidaste tu contraseña?
-          </Link>
+          <p>¿No tienes una cuenta? <Link to="/register" className="text-green-600 hover:underline">Regístrate</Link></p>
+          <Link to="/forgot-password" className="text-green-600 mt-2 block cursor-pointer hover:underline">¿Olvidaste tu contraseña?</Link>
         </div>
-
       </div>
     </div>
   );
