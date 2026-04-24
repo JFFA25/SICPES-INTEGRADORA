@@ -32,11 +32,11 @@ El backend de SICPES incluye el flujo integrado de la administración:
 ## Guía de Inicialización Rápida
 Hidrata tu entorno virtual o instala las dependencias directamente así:
 ```bash
-pip install -r requirements.txt
+py -r requirements.txt
 ```
 Ejecuta tu terminal local utilizando Uvicorn como servidor ASGI:
 ```bash
-python -m uvicorn app:app --reload
+py -m uvicorn app:app --reload
 ```
 *(Nota: Asegúrate de tener tus variables de entorno configuradas para la conexión a MySQL).*
 

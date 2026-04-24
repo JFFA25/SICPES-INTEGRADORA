@@ -5,6 +5,7 @@ from routes.reservation_routes import reservation_router
 from routes.room_routes import room_router
 from routes.quota_routes import quota_router
 from routes.seed_routes import seed_router
+from routes.nosql_routes import nosql_router
 
 app = FastAPI(
     title="SICPES - API", 
@@ -14,6 +15,7 @@ app = FastAPI(
 # Integración de routers
 app.include_router(auth_router, prefix="/api")
 app.include_router(seed_router, prefix="/api")
+app.include_router(nosql_router, prefix="/api")
 app.include_router(user_router, prefix="/api")
 app.include_router(reservation_router, prefix="/api")
 app.include_router(room_router, prefix="/api")

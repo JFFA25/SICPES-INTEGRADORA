@@ -5,7 +5,7 @@ from typing import Optional
 from pydantic import BaseModel
 from config.database import get_db
 
-seed_router = APIRouter(tags=["Generación de Datos (Testing)"])
+seed_router = APIRouter(tags=["SQL Tests"])
 
 class SeedRequest(BaseModel):
     cantidad: int = 10
