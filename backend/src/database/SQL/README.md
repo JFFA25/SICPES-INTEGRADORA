@@ -77,6 +77,87 @@ Consulta `DataDictionary/DataDictionary_SICPES.pdf` para referencia completa de 
 
 El script de respaldo de estructura está en `backups/sicpes_backup_estructure.sql`
 
+## Conexión desde Backend
+
+La conexión se configura en `backend/src/database/db.js`:
+
+```javascript
+const mysql = require('mysql2/promise');
+
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'sicpes',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+});
+
+module.exports = pool;
+```
+
+## Configuración de Variables de Entorno
+
+En el archivo `.env` del backend:
+
+```env
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=tu_password
+DB_NAME=sicpes
+PORT=3306
+```
+
+## Ejemplo de Consulta SQL
+
+```sql
+-- Obtener todas las reservaciones activas
+SELECT r.*, u.nombre, u.email, h.numeroHabitacion
+FROM reservaciones r
+JOIN usuarios u ON r.usuarioId = u.id
+JOIN habitaciones h ON r.habitacionId = h.id
+WHERE r.estado = 'activa';
+```
+
+## Mantenimiento
+
+### Respaldos periódicos
+Se recomienda realizar backups diarios de la estructura y datos:
+
+```bash
+mysqldump -u root -p sicpes > backup_$(date +%Y%m%d).sql
+```
+
+### Optimización
+Ejecuta análisis periódico de tablas:
+
+```sql
+ANALYZE TABLE usuarios;
+ANALYZE TABLE reservaciones;
+ANALYZE TABLE pagos;
+```
+
+## Resolución de Problemas
+
+### Error de conexión
+1. Verifica que MySQL esté ejecutándose
+2. Confirma credenciales en `.env`
+3. Verifica que la base de datos exista
+
+### Error de codificación
+Asegurate de usar utf8mb4 en la creación de la base de datos:
+
+```sql
+CREATE DATABASE sicpes CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+## Documentación Adicional
+
+- **Diccionario de datos**: Consulta `DataDictionary/DataDictionary_SICPES.pdf`
+- **Diagrama de estructura**: Ver `strucuture/SICPES_Estrucuture.png`
+- **Dashboard visual**: Ver `dashboard/Dashboard - SICPES.png`
+
 ## Licencia
 
 ISC
