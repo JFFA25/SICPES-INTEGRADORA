@@ -67,7 +67,7 @@ El diagrama de estructura se encuentra en `strucuture/SICPES_Estrucuture.png`
 
 ## Dashboard
 
-El dashboard de Power BI se encuentra en `dashboard/Dashboard - SICPES.png`
+El dashboard de Navicat  se encuentra en `dashboard/Dashboard - SICPES.png`
 
 ##Diccionario de Datos
 
