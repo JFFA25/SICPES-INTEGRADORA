@@ -29,7 +29,7 @@
   "usuario_confirmado": 1
 }
 ```
-![Test](/backend/src/database/SQL/tests/2.500-Deudores.png) 
+![Test](/backend/src/database/SQL/tests/2.500-deudores.png) 
 
 ### Test 3: Simulación de Ataque de Spam y Solicitudes Falsificadas
 
