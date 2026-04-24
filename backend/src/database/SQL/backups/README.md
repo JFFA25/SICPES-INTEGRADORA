@@ -1,143 +1,26 @@
 # Backups - SICPES
 
 ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
-![Backup](https://img.shields.io/badge/Backup-Storage-%23333333?style=for-the-badge&logo=googledrive&logoColor=white)
+![Backup](https://img.shields.io/badge/Backup-SQL-success?style=for-the-badge&logo=mysql&logoColor=white)
 
-Esta carpeta contiene los scripts de respaldo (backups) de la estructura de la base de datos del sistema SICPES.
+Esta carpeta contiene los archivos de respaldo necesarios para reconstruir o migrar la base de datos del sistema SICPES.
 
 ## Archivo Principal
 
-| Archivo | Descripción |
-|---------|-------------|
-| `sicpes_backup_estructure.sql` | Script SQL con la estructura completa de todas las tablas |
+*   **`sicpes_backup_estructure.sql`**: Script completo que contiene la definición de todas las tablas, relaciones, índices y restricciones de integridad.
 
-## Tipos de Backups
+## 🛠 Cómo restaurar la base de datos
 
-### 1. Backup de Estructura
-Contiene únicamente la definición de tablas, índices y relaciones. No incluye datos.
-
-### 2. Backup Completo
-Incluye estructura + datos. No se incluye por tamaño.
-
-### 3. Backup Incremental
-Contiene solo los cambios desde el último backup.
-
-## Tablas Incluidas
-
-- `usuarios` - Registro de usuarios del sistema
-- `reservaciones` - Solicitudes de alojamiento
-- `pagos` - Registro de pagos
-- `habitaciones` - Inventario de habitaciones
-- `pisos` - Definición de pisos
-- `quotas` - Prorrateos y mensualidades
-- `configuraciones` - Configuraciones globales
-
-## Cómo Usar el Backup
-
-### Restaurar la Estructura
-
+### Opción 1: Terminal (Línea de comandos)
 ```bash
 mysql -u root -p sicpes < sicpes_backup_estructure.sql
 ```
 
-### Desde MySQL Client
+### Opción 2: MySQL Workbench / Navicat
+1. Abre tu cliente de base de datos.
+2. Crea la base de datos `sicpes` si no existe.
+3. Ejecuta el archivo `sicpes_backup_estructure.sql` mediante la opción "Run SQL Script".
 
-```sql
-SOURCE ruta/al/archivo/sicpes_backup_estructure.sql;
-```
-
-## Copia de Seguridad Manual
-
-### Exportar estructura
-
-```bash
-mysqldump -u root -p --no-data sicpes > estructura.sql
-```
-
-### Exportar todo
-
-```bash
-mysqldump -u root -p sicpes > backup_completo.sql
-```
-
-## Programación de Backups
-
-### Diario
-```bash
-0 2 * * * mysqldump -u root -p sicpes > /backup/sicpes_$(date +\%Y\%m\%d).sql
-```
-
-### Semanal
-```bash
-0 3 * * 0 mysqldump -u root -p sicpes > /backup/sicpes_semanal.sql
-```
-
-## Almacenamiento y Retención
-
-| Tipo | Retención |
-|------|----------|
-| Diario | 7 días |
-| Semanal | 4 semanas |
-| Mensual | 12 meses |
-
-## Verificación
-
-```bash
-mysql -u root -p -e "USE sicpes; SHOW TABLES;"
-```
-
-## Mejores Prácticas
-
-1. **Nunca sobreescribir** - crear nuevo archivo con fecha
-2. **Verificar siempre** - después de cada backup
-3. **Probar restauración** - mensualmente
-4. **Almacenamiento seguro** - mínimo en 2 ubicaciones
-
-## Diferencias
-
-- **Backups**: Script SQL ejecutable para restaurar estructura
-- **DataDictionary**: Documentación de referencia (PDF)
-- **strucuture/**: Diagramas visuales
-
-## Restauración de Emergencia
-
-### 1. Identificar el problema
-```sql
-SHOW ERRORS;
-```
-
-### 2. Restaurar tabla específica
-```bash
-mysql -u root -p sicpes -e "DROP TABLE nombre_tabla"
-mysql -u root -p sicpes < tabla_backup.sql
-```
-
-### 3. Verificar
-```sql
-SELECT COUNT(*) FROM nombre_tabla;
-```
-
-## Comando mysqldump Opciones
-
-| Opción | Descripción |
-|--------|-------------|
-| `--no-data` | Solo estructura |
-| `--single-transaction` | Para tablas InnoDB |
-| `--quick` | Para tablas grandes |
-| `--add-drop-table` | Agrega DROP TABLE |
-| `--create-options` | Include opciones MySQL |
-
-## Errores Comunes
-
-### " Table already exists "
-Solución: Agregar `--add-drop-table` o ejecutar DROP TABLE antes
-
-### " Access denied "
-Solución: Verificar usuario y privilegios
-
-### " Unknown database "
-Solución: Crear la base de datos primero
-
-## Licencia
-
-ISC
+## Recomendaciones
+1. **Verificación**: Después de restaurar, verifica que las tablas (`usuarios`, `reservaciones`, etc.) se hayan creado correctamente.
+2. **Estructura vs Datos**: Este backup es de **estructura**. Para poblar el sistema, usa los procedimientos en la carpeta `routines/`.

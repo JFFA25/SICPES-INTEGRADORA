@@ -30,7 +30,7 @@
 3. **Estilos**: Se utiliza TailwindCSS con clases utilitarias. No se usan archivos CSS separados por componente.
 4. **Exportación**: Cada archivo exporta su componente como `export default NombreComponente`.
 5. **Consumo de sesión**: El `Navbar` consume el contexto de sesión vía fetch para adaptar su contenido según el rol del usuario autenticado.
-## 🛠 Cómo agregar un nuevo componente
+## Cómo agregar un nuevo componente
  
 1. Crea un archivo `NombreComponente.tsx` en esta carpeta.
 2. Define y exporta el componente como función de flecha.
