@@ -99,6 +99,45 @@ mysql -u root -p -e "USE sicpes; SHOW TABLES;"
 - **DataDictionary**: Documentación de referencia (PDF)
 - **strucuture/**: Diagramas visuales
 
+## Restauración de Emergencia
+
+### 1. Identificar el problema
+```sql
+SHOW ERRORS;
+```
+
+### 2. Restaurar tabla específica
+```bash
+mysql -u root -p sicpes -e "DROP TABLE nombre_tabla"
+mysql -u root -p sicpes < tabla_backup.sql
+```
+
+### 3. Verificar
+```sql
+SELECT COUNT(*) FROM nombre_tabla;
+```
+
+## Comando mysqldump Opciones
+
+| Opción | Descripción |
+|--------|-------------|
+| `--no-data` | Solo estructura |
+| `--single-transaction` | Para tablas InnoDB |
+| `--quick` | Para tablas grandes |
+| `--add-drop-table` | Agrega DROP TABLE |
+| `--create-options` | Include opciones MySQL |
+
+## Errores Comunes
+
+### " Table already exists "
+Solución: Agregar `--add-drop-table` o ejecutar DROP TABLE antes
+
+### " Access denied "
+Solución: Verificar usuario y privilegios
+
+### " Unknown database "
+Solución: Crear la base de datos primero
+
 ## Licencia
 
 ISC
