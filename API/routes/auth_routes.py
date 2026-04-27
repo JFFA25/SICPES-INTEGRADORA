@@ -9,6 +9,8 @@ from portadortoken import PortadorToken
 
 auth_router = APIRouter()
 
+import uuid
+
 @auth_router.post("/login", tags=["Autenticación"])
 def login(user: UserLogin, db: Session = Depends(get_db)):
     db_user = get_user_by_email(db, email=user.email)
@@ -19,7 +21,12 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     if db_user.password != user.password and not verify_password(user.password, db_user.password):
         raise HTTPException(status_code=400, detail="Credenciales incorrectas")
 
-    access_token = create_access_token(data={"sub": db_user.email, "rol": db_user.rol, "id": db_user.id, "nombre": db_user.nombre})
+    # Generate a unique session ID for this login
+    session_id = str(uuid.uuid4())
+    db_user.current_session = session_id
+    db.commit()
+
+    access_token = create_access_token(data={"sub": db_user.email, "rol": db_user.rol, "id": db_user.id, "nombre": db_user.nombre, "session_id": session_id})
     return {"access_token": access_token, "token_type": "bearer"}
 
 @auth_router.get("/session", tags=["Autenticación"])

@@ -7,9 +7,19 @@ from routes.quota_routes import quota_router
 from routes.seed_routes import seed_router
 from routes.nosql_routes import nosql_router
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(
     title="SICPES - API", 
     description="API Estructurada del Sistema Integral de Control de Pensión de Estudiantes"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Integración de routers

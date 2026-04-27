@@ -4,6 +4,9 @@ const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 
 
+// GLOBAL MAP TO TRACK USER SESSIONS
+const activeSessions = new Map();
+
 const loginUser = (req, res) => {
   const { email, password } = req.body;
 
@@ -56,6 +59,17 @@ const loginUser = (req, res) => {
         return res.status(500).json({ error: "Error al crear la sesión" });
       }
 
+      // CERRAR SESIÓN ANTERIOR SI EXISTE (PREVENIR LOGIN CONCURRENTE)
+      if (activeSessions.has(user.id)) {
+        const oldSessionId = activeSessions.get(user.id);
+        if (req.sessionStore && req.sessionStore.destroy) {
+          req.sessionStore.destroy(oldSessionId, (err) => {
+             if (err) console.error("Error al destruir sesión antigua:", err);
+          });
+        }
+      }
+      activeSessions.set(user.id, req.session.id);
+
       // CREAR SESIÓN
       req.session.user = {
         id: user.id,
@@ -99,18 +113,25 @@ const registerUser = async (req, res) => {
   // generar token
   const token = crypto.randomBytes(20).toString("hex");
 
-  createUser({ nombre, email, password, token }, async (err) => {
-    if (err) {
-      return res.status(500).json({ error: "Error al registrar" });
-    }
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // enviar correo
-    await sendConfirmationEmail(email, token);
+    createUser({ nombre, email, password: hashedPassword, token }, async (err) => {
+      if (err) {
+        return res.status(500).json({ error: "Error al registrar" });
+      }
 
-    res.json({
-      message: "Se ha enviado un correo de confirmación",
+      // enviar correo
+      await sendConfirmationEmail(email, token);
+
+      res.json({
+        message: "Se ha enviado un correo de confirmación",
+      });
     });
-  });
+  } catch (error) {
+    console.error("Error al hashear contraseña:", error);
+    return res.status(500).json({ error: "Error interno del servidor" });
+  }
 };
 
 
@@ -144,6 +165,9 @@ const confirmUser = (req, res) => {
 
 
 const logoutUser = (req, res) => {
+  if (req.session.user && activeSessions.has(req.session.user.id)) {
+    activeSessions.delete(req.session.user.id);
+  }
   req.session.destroy((err) => {
     if (err) return res.status(500).json({ error: "Error al cerrar sesión" });
     res.clearCookie("connect.sid");

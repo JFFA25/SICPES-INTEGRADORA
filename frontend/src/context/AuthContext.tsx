@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
 
 interface User {
   id: number;
@@ -54,6 +54,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     checkSession();
   }, []);
+
+  // Inactivity timeout logic (5 minutes)
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const resetTimer = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    // Solo iniciar el temporizador si el usuario está logueado
+    if (user) {
+      timerRef.current = setTimeout(() => {
+        console.log("Sesión expirada por inactividad");
+        logout();
+      }, 5 * 60 * 1000); // 5 minutos
+    }
+  }, [user]);
+
+  useEffect(() => {
+    // Configurar eventos para detectar actividad
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    
+    const handleActivity = () => {
+      resetTimer();
+    };
+
+    if (user) {
+      events.forEach(event => document.addEventListener(event, handleActivity));
+      resetTimer(); // Iniciar temporizador al montar
+    }
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      events.forEach(event => document.removeEventListener(event, handleActivity));
+    };
+  }, [user, resetTimer]);
 
   const login = (userData: User, token: string) => {
     setUser(userData);

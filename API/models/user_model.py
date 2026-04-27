@@ -11,3 +11,4 @@ class UserModel(Base):
     rol = Column(String(20), default="user")
     confirmado = Column(Boolean, default=False)
     token = Column(String(255), nullable=True)
+    current_session = Column(String(255), nullable=True)

@@ -26,10 +26,12 @@ app.use(
     secret: process.env.SESSION_SECRET || "secreto",
     resave: false,
     saveUninitialized: false,
+    rolling: true, // Renueva la sesión cada vez que el usuario hace una petición (interactúa)
     cookie: {
       secure: false,
       httpOnly: true,
       sameSite: "lax",
+      maxAge: 5 * 60 * 1000, // 5 minutos exactos de inactividad
     },
   })
 );
@@ -55,6 +57,9 @@ app.get("/api/settings", adminController.getPublicSettings);
 
 // SERVIDOR
 const PORT = process.env.PORT || 3000;
+
+const createDefaultUsers = require("./src/utils/initUsers");
+createDefaultUsers();
 
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
