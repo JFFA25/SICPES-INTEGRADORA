@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import icon from "../assets/images/icon.ico";
 
@@ -11,6 +11,13 @@ const AdminReservations = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editData, setEditData] = useState({ piso: "", habitacion: "", monto: "" });
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, searchTerm]);
 
   const fetchReservations = async () => {
     try {
@@ -112,6 +119,35 @@ const AdminReservations = () => {
     return matchesFilter && matchesSearch;
   });
 
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredReservations.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredReservations.length / itemsPerPage);
+
+  const getPageNumbers = () => {
+    const pages = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 4) {
+        for (let i = 1; i <= 5; i++) pages.push(i);
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 3) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    return pages;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 animate-page-transition">
       <nav className="flex items-center justify-between px-8 py-3 bg-white border-b border-gray-200 shadow-sm">
@@ -212,8 +248,8 @@ const AdminReservations = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredReservations.length > 0 ? (
-                  filteredReservations.map((r, index) => (
+                {currentItems.length > 0 ? (
+                  currentItems.map((r, index) => (
                     <tr key={index} className="bg-slate-50 rounded-3xl transition hover:-translate-y-0.5">
                       <td className="px-4 py-4 text-sm text-slate-700 font-semibold">#{r.id}</td>
                       <td className="px-4 py-4 text-sm text-slate-700">
@@ -350,6 +386,58 @@ const AdminReservations = () => {
               </tbody>
             </table>
           </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-gray-100 bg-white pt-6 mt-2">
+              <div className="flex flex-1 items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    Mostrando <span className="font-semibold">{indexOfFirstItem + 1}</span> a <span className="font-semibold">{Math.min(indexOfLastItem, filteredReservations.length)}</span> de <span className="font-semibold">{filteredReservations.length}</span> resultados
+                  </p>
+                </div>
+                <div>
+                  <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 disabled:opacity-50"
+                    >
+                      <span className="sr-only">Anterior</span>
+                      <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                    {getPageNumbers().map((number, index) => (
+                        <button
+                          key={index}
+                          onClick={() => typeof number === 'number' && setCurrentPage(number)}
+                          disabled={number === '...'}
+                          className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold focus:z-20 ${
+                            currentPage === number
+                              ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
+                              : number === '...'
+                              ? 'text-gray-500 ring-1 ring-inset ring-gray-300 bg-gray-50 cursor-default'
+                              : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {number}
+                        </button>
+                    ))}
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 disabled:opacity-50"
+                    >
+                      <span className="sr-only">Siguiente</span>
+                      <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </nav>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>

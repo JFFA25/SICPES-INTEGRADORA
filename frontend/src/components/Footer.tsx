@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 const Footer = () => {
   return (
     <footer className="bg-gradient-to-r from-[#003d1f] to-[#002814] text-white px-8 md:px-16 py-8">
@@ -21,7 +23,7 @@ const Footer = () => {
 
         {/* DERECHA */}
         <div className="text-center md:text-right space-y-1">
-          <p className="hover:underline cursor-pointer">Blog</p>
+          <p className="hover:underline cursor-pointer"><Link to="/sitemap">Mapa del Sitio</Link></p>
           <p className="hover:underline cursor-pointer">FAQs</p>
           <p className="hover:underline cursor-pointer">Soporte</p>
         </div>

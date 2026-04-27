@@ -178,8 +178,8 @@ const Dashboard = () => {
       </nav>
 
       {/* CONTENIDO */}
-      <div className="text-center mt-10 px-4">
-
+      <div className="text-center mt-6 px-4 max-w-5xl mx-auto">
+        
         {/* BIENVENIDA */}
         <h1 className="text-3xl font-bold text-gray-700">
           ¡Bienvenido, {user?.nombre || "Usuario"}!

@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import departamento from "../assets/images/departament.webp";
 
 const Hero = () => {
@@ -11,10 +12,16 @@ const Hero = () => {
           para vivir y estudiar.
         </h1>
 
-        <p className="text-lg md:text-xl">
+        <p className="text-lg md:text-xl mb-8 opacity-90">
           Explora opciones de alojamiento, administra tu renta y mantente
           conectado con tu entorno estudiantil. Todo desde un solo lugar.
         </p>
+
+        <Link to="/register">
+          <button className="bg-white text-green-700 font-bold text-lg px-8 py-3 rounded-full shadow-lg hover:shadow-xl hover:-translate-y-1 hover:bg-green-50 transition-all duration-300">
+            Comenzar ahora
+          </button>
+        </Link>
       </div>
 
       {/* IMAGEN */}
@@ -22,7 +29,7 @@ const Hero = () => {
         <img
           src={departamento}
           alt="edificio"
-          className="w-[350px] md:w-[500px] lg:w-[600px] drop-shadow-xl animate-building-enter"
+          className="w-[350px] md:w-[500px] lg:w-[600px] drop-shadow-2xl hover:scale-105 hover:-rotate-1 transition-all duration-500 animate-building-enter cursor-pointer"
         />
       </div>
     </section>

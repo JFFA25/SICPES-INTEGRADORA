@@ -4,6 +4,7 @@ import icon from "../assets/images/icon.png";
 import individualImg from "../assets/images/individual.png";
 import compartidaImg from "../assets/images/compartido.png";
 import DatePicker, { registerLocale } from "react-datepicker";
+
 import { es } from "date-fns/locale/es";
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -276,8 +277,8 @@ const Reservation = () => {
       </nav>
 
       {/* CONTENIDO */}
-      <div className="flex justify-center items-center px-4 py-8">
-
+      <div className="flex flex-col items-center px-4 py-8 max-w-5xl mx-auto w-full">
+        
         <div className="bg-white w-full max-w-2xl p-6 md:p-8 rounded-2xl shadow-xl shadow-green-100/50 border border-green-50">
 
           <h1 className="text-2xl md:text-3xl font-bold text-center text-gray-800 mb-2">

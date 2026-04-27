@@ -201,7 +201,7 @@ const Payments = () => {
                 </div>
             </nav>
 
-            <main className="flex-1 w-full max-w-5xl mx-auto px-6 py-12">
+            <main className="flex-1 w-full max-w-5xl mx-auto px-6 py-8">
                 <div className="text-center mb-10">
                     <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Gestión de Pagos</h1>
                     <p className="text-slate-500 mt-2 text-sm max-w-xl mx-auto">

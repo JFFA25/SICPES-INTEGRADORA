@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
+import Breadcrumbs from "../components/Breadcrumbs";
 
 const Contact = () => {
 
@@ -28,11 +29,16 @@ const Contact = () => {
                 </div>
             </div>
 
+            {/* BREADCRUMBS */}
+            <div className="max-w-7xl mx-auto px-6 md:px-10 mt-4">
+                <Breadcrumbs />
+            </div>
+
             {/* CONTENIDO */}
-            <div className="grid md:grid-cols-2 gap-6 p-6 md:p-10">
+            <div className="grid md:grid-cols-2 gap-6 p-6 md:p-10 max-w-7xl mx-auto">
 
                 {/* IZQUIERDA */}
-                <div className="bg-white p-6 rounded-xl shadow">
+                <div className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
 
                     <h2 className="text-xl font-bold text-green-700 mb-4">
                         Datos de contacto
@@ -47,9 +53,9 @@ const Contact = () => {
                     </h3>
 
                     <div className="flex gap-4 mb-6">
-                        <img src="https://cdn-icons-png.flaticon.com/512/124/124010.png" className="w-8 cursor-pointer" />
-                        <img src="https://cdn-icons-png.flaticon.com/512/733/733579.png" className="w-8 cursor-pointer" />
-                        <img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" className="w-8 cursor-pointer" />
+                        <img src="https://cdn-icons-png.flaticon.com/512/124/124010.png" className="w-8 cursor-pointer hover:scale-110 transition-transform duration-200" alt="Facebook" />
+                        <img src="https://cdn-icons-png.flaticon.com/512/733/733579.png" className="w-8 cursor-pointer hover:scale-110 transition-transform duration-200" alt="Twitter" />
+                        <img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" className="w-8 cursor-pointer hover:scale-110 transition-transform duration-200" alt="Instagram" />
                     </div>
 
                     {/* MAPA */}
@@ -66,7 +72,7 @@ const Contact = () => {
                 </div>
 
                 {/* DERECHA */}
-                <div className="bg-white rounded-xl shadow overflow-hidden">
+                <div className="bg-white rounded-xl shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden">
 
                     <img
                         src="https://images.unsplash.com/photo-1587614382346-4ec70e388b28"

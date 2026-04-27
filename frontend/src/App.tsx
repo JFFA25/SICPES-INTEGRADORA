@@ -13,6 +13,8 @@ import AdminPayments from "./pages/AdminPayments";
 import Error from "./pages/Error";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import Sitemap from "./pages/Sitemap";
+import NotFound from "./pages/NotFound";
 
 function App() {
   return (
@@ -32,6 +34,8 @@ function App() {
         <Route path="/admin/payments" element={<AdminPayments />} />
         <Route path="/admin/settings" element={<AdminSettings />} />
         <Route path="/error" element={<Error />} />
+        <Route path="/sitemap" element={<Sitemap />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );
