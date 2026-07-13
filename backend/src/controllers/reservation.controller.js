@@ -3,6 +3,7 @@ const {
   createReservation,
   getReservationByUser,
 } = require("../models/reservation.model");
+const { sendSms } = require("../utils/notifications");
 
 
 // CREAR RESERVACIÓN
@@ -182,6 +183,17 @@ const updateReservationStatus = (req, res) => {
     if (result.affectedRows === 0) {
       return res.status(404).json({
         error: "Reservación no encontrada",
+      });
+    }
+
+    if (estado === "aceptada") {
+      const userQuery = "SELECT u.nombre, u.email, u.telefono FROM tbd_usuarios u JOIN tbd_reservaciones r ON r.usuario_id = u.id WHERE r.id = ? LIMIT 1";
+      db.query(userQuery, [id], async (userErr, userRows) => {
+        if (!userErr && userRows && userRows[0]) {
+          const user = userRows[0];
+          const message = `Hola ${user.nombre}, tu reservación ha sido aceptada en SICPES.`;
+          await sendSms({ to: user.telefono || user.email, body: message });
+        }
       });
     }
 

@@ -43,10 +43,11 @@ const Login = () => {
     }
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
       const res = await fetch(`${apiUrl}/api/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(form),
       });
 
@@ -57,11 +58,8 @@ const Login = () => {
         return;
       }
 
-      const token = data.access_token;
-      
-      // Validar sesión y obtener datos del usuario
       const sessionRes = await fetch(`${apiUrl}/api/session`, {
-        headers: { "Authorization": `Bearer ${token}` },
+        credentials: "include",
       });
 
       if (sessionRes.ok) {
@@ -71,10 +69,9 @@ const Login = () => {
           id: sessionData.id,
           nombre: sessionData.nombre,
           email: sessionData.sub,
-          rol: sessionData.rol
-        }, token);
+          rol: sessionData.rol,
+        }, "");
 
-        // Redirección basada en rol
         if (sessionData.rol === "admin") {
           navigate("/admin/reservations");
         } else {

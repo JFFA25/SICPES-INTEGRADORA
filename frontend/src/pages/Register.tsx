@@ -12,6 +12,7 @@ const Register = () => {
     nombre: "",
     email: "",
     password: "",
+    telefono: "",
   });
 
   const [errors, setErrors] = useState<any>({});
@@ -38,6 +39,12 @@ const Register = () => {
     if (name === "password") {
       if (value.length < 8) {
         error = "Mínimo 8 caracteres";
+      }
+    }
+
+    if (name === "telefono") {
+      if (value.trim() && !/^\+?[0-9]{10,15}$/.test(value.trim())) {
+        error = "Formato inválido (Ej: +5215512345678)";
       }
     }
 
@@ -70,24 +77,45 @@ const Register = () => {
       return;
     }
 
-    if (errors.nombre || errors.email || errors.password) return;
+    if (errors.nombre || errors.email || errors.password || errors.telefono) return;
 
     try {
+      let phoneInput = form.telefono.trim();
+      if (phoneInput) {
+        const digits = phoneInput.replace(/\D/g, "");
+        if (digits.length === 10) {
+          phoneInput = `+521${digits}`;
+        } else if (digits.length === 12 && digits.startsWith("52")) {
+          phoneInput = `+521${digits.substring(2)}`;
+        } else if (digits.length === 13 && digits.startsWith("521")) {
+          phoneInput = `+${digits}`;
+        } else if (!phoneInput.startsWith("+")) {
+          phoneInput = `+${phoneInput}`;
+        }
+      }
+      const formattedPhone = phoneInput ? `whatsapp:${phoneInput}` : "";
+
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          telefono: formattedPhone,
+        }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        setError(
-          "El correo electrónico ya está registrado. Intenta con otro o inicia sesión"
-        );
+        setError(data.error || "El correo electrónico ya está registrado. Intenta con otro o inicia sesión");
       } else {
-        setSuccess("Usuario registrado correctamente. Revisa tu correo para confirmar tu cuenta.");
-        setForm({ nombre: "", email: "", password: "" });
+        setSuccess(data.message || "Usuario registrado correctamente. Revisa tu correo o WhatsApp para confirmar tu cuenta.");
+        setForm({ nombre: "", email: "", password: "", telefono: "" });
+        if (data.requiresVerification) {
+          window.location.href = `/verify-account?email=${encodeURIComponent(form.email)}`;
+        }
       }
 
     } catch {
@@ -197,9 +225,37 @@ const Register = () => {
             )}
           </div>
 
+          {/* TELÉFONO (WHATSAPP) */}
+          <div>
+            <label className="text-green-600 font-medium">Teléfono (WhatsApp)</label>
+            <input
+              type="text"
+              name="telefono"
+              placeholder="Ej: +5215512345678"
+              value={form.telefono}
+              onChange={handleChange}
+              className={`w-full mt-1 px-4 py-2 border rounded-md
+                ${errors.telefono
+                  ? "border-red-500"
+                  : form.telefono
+                    ? "border-green-500"
+                    : "border-gray-300"
+                }
+              `}
+            />
+            {errors.telefono ? (
+              <p className="text-red-500 text-sm">{errors.telefono}</p>
+            ) : (
+              <p className="text-xs text-gray-500 mt-1">Con código de país para confirmación vía WhatsApp.</p>
+            )}
+          </div>
+
           {/* MENSAJE ÉXITO */}
           {success && (
-            <p className="text-green-600 text-sm">{success}</p>
+            <div className="space-y-2">
+              <p className="text-green-600 text-sm">{success}</p>
+              <a href={`/verify-account?email=${encodeURIComponent(form.email)}`} className="text-sm text-green-700 underline">Verificar con mi correo</a>
+            </div>
           )}
           {error && (
             <p className="text-red-500 text-sm text-center">
@@ -211,10 +267,10 @@ const Register = () => {
           <button
             type="submit"
             disabled={
-              errors.nombre || errors.email || errors.password
+              errors.nombre || errors.email || errors.password || errors.telefono
             }
             className={`w-full py-2 rounded-md text-white
-              ${errors.nombre || errors.email || errors.password
+              ${errors.nombre || errors.email || errors.password || errors.telefono
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-green-600 hover:bg-green-700"
               }

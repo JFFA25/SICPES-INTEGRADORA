@@ -55,6 +55,9 @@ app.use("/api/admin", adminRoutes);
 const adminController = require("./src/controllers/admin.controller");
 app.get("/api/settings", adminController.getPublicSettings);
 
+const externalRoutes = require("./src/routes/external.routes");
+app.use("/api", externalRoutes);
+
 // SERVIDOR
 const PORT = process.env.PORT || 3000;
 

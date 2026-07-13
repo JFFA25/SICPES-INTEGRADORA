@@ -15,6 +15,7 @@ const { isAdmin } = require("../middlewares/auth.middleware");
 
 // USUARIO
 router.post("/reservation", createReservationController);
+router.post("/reservations", createReservationController);
 router.get("/reservation/me", getMyReservation);
 router.get("/reservation/occupied", getOccupiedRooms);
 

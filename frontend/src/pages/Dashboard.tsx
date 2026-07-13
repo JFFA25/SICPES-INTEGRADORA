@@ -16,7 +16,6 @@ const Dashboard = () => {
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
   const [paymentMonth, setPaymentMonth] = useState<number | null>(null);
   const [paymentYear, setPaymentYear] = useState<number | null>(null);
-  const [paymentLabel, setPaymentLabel] = useState("MES ACTUAL");
   const [currentMonthStatus, setCurrentMonthStatus] = useState<string | null>(null);
   const [isProrated, setIsProrated] = useState(false);
 
@@ -100,19 +99,16 @@ const Dashboard = () => {
         let targetMonth = currentMonth;
         let targetYear = currentYear;
         let targetStatus = thisMonthPayment?.estado ?? null;
-        let label = "MES ACTUAL";
 
         if (thisMonthPayment?.estado === "pagado") {
           targetMonth = currentMonth === 12 ? 1 : currentMonth + 1;
           targetYear = currentMonth === 12 ? currentYear + 1 : currentYear;
           const nextMonthPayment = payments.find((p: any) => p.mes === targetMonth && p.anio === targetYear);
           targetStatus = nextMonthPayment?.estado ?? null;
-          label = "SIGUIENTE PAGO";
         }
 
         setPaymentMonth(targetMonth);
         setPaymentYear(targetYear);
-        setPaymentLabel(label);
         setCurrentMonthStatus(targetStatus);
 
         if (reservationData && reservationData.estado === "aceptada") {

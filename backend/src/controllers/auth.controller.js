@@ -1,131 +1,135 @@
 const { createUser } = require("../models/user.model");
 const { sendConfirmationEmail, sendForgotPasswordEmail } = require("../utils/mailer");
+const { sendOtpCode } = require("../utils/notifications");
 const crypto = require("crypto");
 const bcrypt = require("bcrypt");
-
+const db = require("../database/db");
 
 // GLOBAL MAP TO TRACK USER SESSIONS
 const activeSessions = new Map();
+const pendingVerifications = new Map();
+const OTP_TTL_MS = 10 * 60 * 1000;
+
+const normalizeEmail = (email) => (typeof email === "string" ? email.trim().toLowerCase() : "");
+const generateOtp = () => String(Math.floor(100000 + Math.random() * 900000));
+const passwordMatches = async (storedPassword, suppliedPassword) => {
+  if (!storedPassword || !suppliedPassword) return false;
+
+  if (typeof storedPassword === "string" && (storedPassword.startsWith("$2") || storedPassword.startsWith("$2a") || storedPassword.startsWith("$2b"))) {
+    return bcrypt.compare(suppliedPassword, storedPassword);
+  }
+
+  return storedPassword === suppliedPassword;
+};
 
 const loginUser = (req, res) => {
   const { email, password } = req.body;
 
-  // VALIDACIÓN BÁSICA
   if (!email || !password) {
-    return res.status(400).json({
-      error: "Todos los campos son obligatorios",
-    });
+    return res.status(400).json({ error: "Todos los campos son obligatorios" });
   }
 
   const sql = "SELECT * FROM tbd_usuarios WHERE email = ?";
 
-  db.query(sql, [email], (err, results) => {
+  db.query(sql, [normalizeEmail(email)], async (err, results) => {
     if (err) {
       console.error(err);
-      return res.status(500).json({
-        error: "Error del servidor",
-      });
+      return res.status(500).json({ error: "Error del servidor" });
     }
 
-    // USUARIO NO EXISTE
     if (results.length === 0) {
-      return res.status(400).json({
-        error: "Correo o contraseña incorrectos",
-      });
+      return res.status(400).json({ error: "Correo o contraseña incorrectos" });
     }
 
     const user = results[0];
+    const isValid = await passwordMatches(user.password, password);
 
-    // COMPROBAR CONTRASEÑA EN TEXTO PLANO O CON BCRYPT
-    bcrypt.compare(password, user.password, (errBcrypt, isMatch) => {
-      const isValid = user.password === password || isMatch;
-
-      if (!isValid) {
-        return res.status(400).json({
-          error: "Correo o contraseña incorrectos",
-        });
-      }
-
-    // NO CONFIRMADO
-    if (!user.confirmado) {
-      return res.status(403).json({
-        error: "Debes confirmar tu correo antes de iniciar sesión",
-      });
+    if (!isValid) {
+      return res.status(400).json({ error: "Correo o contraseña incorrectos" });
     }
 
-    // REGENERAR SESIÓN PARA EVITAR DATOS ANTIGUOS
+    if (!user.confirmado) {
+      return res.status(403).json({ error: "Debes confirmar tu correo antes de iniciar sesión" });
+    }
+
     req.session.regenerate((err) => {
       if (err) {
         return res.status(500).json({ error: "Error al crear la sesión" });
       }
 
-      // CERRAR SESIÓN ANTERIOR SI EXISTE (PREVENIR LOGIN CONCURRENTE)
       if (activeSessions.has(user.id)) {
         const oldSessionId = activeSessions.get(user.id);
         if (req.sessionStore && req.sessionStore.destroy) {
           req.sessionStore.destroy(oldSessionId, (err) => {
-             if (err) console.error("Error al destruir sesión antigua:", err);
+            if (err) console.error("Error al destruir sesión antigua:", err);
           });
         }
       }
-      activeSessions.set(user.id, req.session.id);
 
-      // CREAR SESIÓN
+      activeSessions.set(user.id, req.session.id);
       req.session.user = {
         id: user.id,
         nombre: user.nombre,
         email: user.email,
-        rol: user.rol
+        rol: user.rol,
       };
 
       req.session.save((err) => {
         if (err) {
           return res.status(500).json({ error: "Error al guardar la sesión" });
         }
-        
-        return res.json({
-          message: "Login exitoso",
-        });
+
+        return res.json({ message: "Login exitoso" });
       });
     });
-    }); // FIN BCRYPT COMPARE
   });
 };
 
 const getSession = (req, res) => {
   if (!req.session.user) {
-    return res.status(401).json({
-      error: "No autorizado",
-    });
+    return res.status(401).json({ error: "No autorizado" });
   }
 
   res.json(req.session.user);
 };
 
 const registerUser = async (req, res) => {
-  const { nombre, email, password } = req.body;
+  const { nombre, email, password, telefono, phone } = req.body;
 
-  // VALIDACIÓN DE CAMPOS VACÍOS
   if (!nombre || !email || !password || nombre.trim() === "" || email.trim() === "" || password.trim() === "") {
     return res.status(400).json({ error: "Todos los campos son obligatorios" });
   }
 
-  // generar token
+  const normalizedEmail = normalizeEmail(email);
   const token = crypto.randomBytes(20).toString("hex");
+  const otp = generateOtp();
+  const phoneValue = telefono || phone || "";
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    createUser({ nombre, email, password: hashedPassword, token }, async (err) => {
+    createUser({ nombre, email: normalizedEmail, password: hashedPassword, token, telefono: phoneValue }, async (err) => {
       if (err) {
         return res.status(500).json({ error: "Error al registrar" });
       }
 
-      // enviar correo
-      await sendConfirmationEmail(email, token);
+      pendingVerifications.set(normalizedEmail, {
+        email: normalizedEmail,
+        otp,
+        expiresAt: Date.now() + OTP_TTL_MS,
+        phone: phoneValue,
+      });
+
+      // await sendConfirmationEmail(normalizedEmail, token); // Disabled automatically on registration as requested
+
+      if (phoneValue) {
+        await sendOtpCode({ to: phoneValue, code: otp, channel: phoneValue.includes("whatsapp") ? "whatsapp" : "sms" });
+      }
 
       res.json({
-        message: "Se ha enviado un correo de confirmación",
+        message: "Registro exitoso. Revisa tu correo para confirmar tu cuenta y/o tu código de verificación.",
+        requiresVerification: true,
+        email: normalizedEmail,
       });
     });
   } catch (error) {
@@ -133,11 +137,6 @@ const registerUser = async (req, res) => {
     return res.status(500).json({ error: "Error interno del servidor" });
   }
 };
-
-
-
-
-const db = require("../database/db");
 
 const confirmUser = (req, res) => {
   const { token } = req.params;
@@ -154,7 +153,6 @@ const confirmUser = (req, res) => {
       return res.redirect("http://localhost:5173/error");
     }
 
-    // Si no se actualizó ningún registro, el token es inválido
     if (result.affectedRows === 0) {
       return res.redirect("http://localhost:5173/error");
     }
@@ -163,6 +161,59 @@ const confirmUser = (req, res) => {
   });
 };
 
+const verifyOtp = (req, res) => {
+  const { email, code } = req.body;
+
+  if (!email || !code) {
+    return res.status(400).json({ error: "Email y código son obligatorios" });
+  }
+
+  const normalizedEmail = normalizeEmail(email);
+  const pending = pendingVerifications.get(normalizedEmail);
+
+  if (!pending) {
+    return res.status(400).json({ error: "No hay un código de verificación activo para este correo" });
+  }
+
+  if (Date.now() > pending.expiresAt) {
+    pendingVerifications.delete(normalizedEmail);
+    return res.status(400).json({ error: "El código ha expirado. Solicita uno nuevo" });
+  }
+
+  if (String(code) !== String(pending.otp)) {
+    return res.status(400).json({ error: "Código de verificación incorrecto" });
+  }
+
+  const sql = "UPDATE tbd_usuarios SET confirmado = 1, token = NULL WHERE email = ?";
+  db.query(sql, [normalizedEmail], (err) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: "Error al verificar la cuenta" });
+    }
+
+    pendingVerifications.delete(normalizedEmail);
+    return res.json({ message: "Cuenta verificada correctamente" });
+  });
+};
+
+const resendConfirmation = (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Email requerido" });
+
+  const normalizedEmail = normalizeEmail(email);
+  db.query("SELECT * FROM tbd_usuarios WHERE email = ?", [normalizedEmail], async (err, results) => {
+    if (err) return res.status(500).json({ error: "Error interno" });
+    if (results.length === 0) return res.status(404).json({ error: "No se encontró el usuario" });
+
+    const token = crypto.randomBytes(20).toString("hex");
+    db.query("UPDATE tbd_usuarios SET token = ? WHERE email = ?", [token, normalizedEmail], async (err2) => {
+      if (err2) return res.status(500).json({ error: "Error generando token" });
+
+      await sendConfirmationEmail(normalizedEmail, token);
+      res.json({ message: "Se ha reenviado el correo de confirmación" });
+    });
+  });
+};
 
 const logoutUser = (req, res) => {
   if (req.session.user && activeSessions.has(req.session.user.id)) {
@@ -179,17 +230,17 @@ const forgotPassword = (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: "Email requerido" });
 
-  db.query("SELECT * FROM tbd_usuarios WHERE email = ?", [email], async (err, results) => {
+  db.query("SELECT * FROM tbd_usuarios WHERE email = ?", [normalizeEmail(email)], async (err, results) => {
     if (err) return res.status(500).json({ error: "Error interno" });
-    if (results.length === 0) return res.status(400).json({ error: "Si el correo existe, recibirás un enlace." }); // Mensaje ambiguo de seguridad
+    if (results.length === 0) return res.status(400).json({ error: "Si el correo existe, recibirás un enlace." });
 
     const token = crypto.randomBytes(20).toString("hex");
-    
-    db.query("UPDATE tbd_usuarios SET token = ? WHERE email = ?", [token, email], async (err2) => {
+
+    db.query("UPDATE tbd_usuarios SET token = ? WHERE email = ?", [token, normalizeEmail(email)], async (err2) => {
       if (err2) return res.status(500).json({ error: "Error generando token" });
 
       try {
-        await sendForgotPasswordEmail(email, token);
+        await sendForgotPasswordEmail(normalizeEmail(email), token);
         res.json({ message: "Si el correo existe, recibirás un enlace de recuperación." });
       } catch (e) {
         res.status(500).json({ error: "Error enviando correo" });
@@ -209,7 +260,7 @@ const resetPassword = (req, res) => {
   db.query("SELECT * FROM tbd_usuarios WHERE token = ?", [token], async (err, results) => {
     if (err) return res.status(500).json({ error: "Error interno" });
     if (results.length === 0) return res.status(400).json({ error: "Token inválido o expirado." });
-    
+
     const user = results[0];
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
@@ -229,4 +280,4 @@ const checkResetToken = (req, res) => {
   });
 };
 
-module.exports = { loginUser, registerUser, confirmUser, getSession, logoutUser, forgotPassword, resetPassword, checkResetToken };
+module.exports = { loginUser, registerUser, confirmUser, verifyOtp, resendConfirmation, getSession, logoutUser, forgotPassword, resetPassword, checkResetToken };

@@ -13,6 +13,7 @@ import AdminPayments from "./pages/AdminPayments";
 import Error from "./pages/Error";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import VerifyAccount from "./pages/VerifyAccount";
 import Sitemap from "./pages/Sitemap";
 import NotFound from "./pages/NotFound";
 
@@ -25,6 +26,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/verify-account" element={<VerifyAccount />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/reservation" element={<Reservation />} />
