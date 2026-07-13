@@ -56,6 +56,9 @@ app.use("/api/rooms", roomRoutes);
 const adminRoutes = require("./src/routes/admin.routes");
 app.use("/api/admin", adminRoutes);
 
+const reportesRoutes = require("./src/routes/reports.routes");
+app.use("/api/admin/reportes", reportesRoutes);
+
 const adminController = require("./src/controllers/admin.controller");
 app.get("/api/settings", adminController.getPublicSettings);
 

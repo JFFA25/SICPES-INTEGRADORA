@@ -49,7 +49,7 @@ const Dashboard = () => {
 
     const getSession = async () => {
       try {
-        const res = await fetch("http://localhost:3000/api/session", {
+        const res = await fetch("/api/session", {
           credentials: "include",
         });
 
@@ -68,7 +68,7 @@ const Dashboard = () => {
 
     const getReservation = async () => {
       try {
-        const res = await fetch("http://localhost:3000/api/reservation/me", {
+        const res = await fetch("/api/reservation/me", {
           credentials: "include",
         });
 
@@ -84,7 +84,7 @@ const Dashboard = () => {
 
     const getPaymentInfo = async (reservationData: any) => {
       try {
-        const res = await fetch("http://localhost:3000/api/payment/me", {
+        const res = await fetch("/api/payment/me", {
           credentials: "include",
         });
 
@@ -160,7 +160,7 @@ const Dashboard = () => {
           <button
             className="bg-gray-900 border border-gray-800 text-white px-5 py-2 rounded-xl hover:bg-gray-800 transition shadow-sm ml-2"
             onClick={async () => {
-              await fetch("http://localhost:3000/api/logout", {
+              await fetch("/api/logout", {
                 method: "POST",
                 credentials: "include",
               });

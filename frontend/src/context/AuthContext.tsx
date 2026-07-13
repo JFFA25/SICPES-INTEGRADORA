@@ -21,10 +21,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   const checkSession = async () => {
-    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
-
     try {
-      const res = await fetch(`${apiUrl}/api/session`, {
+      const res = await fetch(`/api/session`, {
         credentials: "include",
       });
 
