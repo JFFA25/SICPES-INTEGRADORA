@@ -82,4 +82,4 @@ SICPES es una innovadora plataforma web diseñada para proporcionar a los estudi
 | **Edgar Cabrera Velázquez** | Backend / Lógica del sistema | [@Edgar-Cbr](https://github.com/Edgar-Cbr) |
 | **Edwin Hernández Campos** | Base de datos / Estructura | [@Edwinhdzcm](https://github.com/Edwinhdzcm) |
 | **Giovany Raul Pazos Cruz** | Frontend / Interfaz | [@giova0412](https://github.com/giova0412) |
-| **Uriel Maldonado Bernabe** | Pruebas / Soporte / Documentación | [@Urii7895](https://github.com/Urii7895) |
+| **Brisa Nallely Garcia Gregorio** | Pruebas / Soporte / Documentación | [@Brisgregorio](https://github.com/Brisgregorio) |
