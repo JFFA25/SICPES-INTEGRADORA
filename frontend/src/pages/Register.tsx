@@ -226,8 +226,8 @@ const Register = () => {
           </div>
 
           {/* TELÉFONO (WHATSAPP) */}
-          <div>
-            <label className="text-green-600 font-medium">Teléfono (WhatsApp)</label>
+          <div>ñ
+            <label className="text-green-600 font-medium">Teléfono</label>
             <input
               type="text"
               name="telefono"
