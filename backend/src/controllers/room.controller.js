@@ -29,7 +29,7 @@ const addRooms = (req, res) => {
   // Bulk insert ignore
   const values = habArray.map(h => [piso, h]);
   
-  db.query("INSERT IGNORE INTO tbd_habitaciones (piso, habitacion) VALUES ?", [values], (err, result) => {
+  db.query("INSERT IGNORE INTO tbi_habitaciones (piso, habitacion) VALUES ?", [values], (err, result) => {
     if (err) return res.status(500).json({ error: "Error al insertar" });
     res.json({ message: "Habitaciones agregadas correctamente", added: result.affectedRows });
   });
@@ -37,7 +37,7 @@ const addRooms = (req, res) => {
 
 const deleteFloor = (req, res) => {
   const { piso } = req.params;
-  db.query("DELETE FROM tbd_habitaciones WHERE piso = ?", [piso], (err, result) => {
+  db.query("DELETE FROM tbi_habitaciones WHERE piso = ?", [piso], (err, result) => {
     if (err) return res.status(500).json({ error: "Error al eliminar" });
     res.json({ message: "Piso y habitaciones eliminados" });
   });

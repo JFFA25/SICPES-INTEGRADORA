@@ -9,7 +9,7 @@ const AdminPayments = () => {
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("Todas");
   const [searchTerm, setSearchTerm] = useState("");
-  
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -20,7 +20,7 @@ const AdminPayments = () => {
   const fetchPayments = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/payments`, {
+      const res = await fetch("/api/admin/payments", {
         credentials: "include",
       });
 
@@ -45,9 +45,11 @@ const AdminPayments = () => {
 
   const updatePaymentStatus = async (id: number, estado: string) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/payments/${id}`, {
+      const res = await fetch(`/api/admin/payments/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         credentials: "include",
         body: JSON.stringify({ estado }),
       });
@@ -128,7 +130,7 @@ const AdminPayments = () => {
   };
 
   const handleLogout = async () => {
-    await fetch(`${import.meta.env.VITE_API_URL}/api/logout`, {
+    await fetch("/api/logout", {
       method: "POST",
       credentials: "include",
     });
@@ -216,11 +218,10 @@ const AdminPayments = () => {
               <button
                 key={status}
                 onClick={() => setFilter(status)}
-                className={`px-4 py-2 rounded-full text-sm font-semibold transition ${
-                  filter === status
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                }`}
+                className={`px-4 py-2 rounded-full text-sm font-semibold transition ${filter === status
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  }`}
               >
                 {status}
               </button>
@@ -311,20 +312,19 @@ const AdminPayments = () => {
                       </svg>
                     </button>
                     {getPageNumbers().map((number, index) => (
-                        <button
-                          key={index}
-                          onClick={() => typeof number === 'number' && setCurrentPage(number)}
-                          disabled={number === '...'}
-                          className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold focus:z-20 ${
-                            currentPage === number
-                              ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
-                              : number === '...'
-                              ? 'text-gray-500 ring-1 ring-inset ring-gray-300 bg-gray-50 cursor-default'
-                              : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50'
+                      <button
+                        key={index}
+                        onClick={() => typeof number === 'number' && setCurrentPage(number)}
+                        disabled={number === '...'}
+                        className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold focus:z-20 ${currentPage === number
+                          ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
+                          : number === '...'
+                            ? 'text-gray-500 ring-1 ring-inset ring-gray-300 bg-gray-50 cursor-default'
+                            : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50'
                           }`}
-                        >
-                          {number}
-                        </button>
+                      >
+                        {number}
+                      </button>
                     ))}
                     <button
                       onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}

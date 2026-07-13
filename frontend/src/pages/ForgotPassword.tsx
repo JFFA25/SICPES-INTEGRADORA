@@ -23,7 +23,7 @@ const ForgotPassword = () => {
     setMessage("");
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/forgot-password`, {
+      const res = await fetch(`/api/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email })
@@ -56,7 +56,7 @@ const ForgotPassword = () => {
         {message ? (
           <div>
             <div className="p-4 bg-green-50 text-green-700 font-medium text-sm border border-green-200 rounded-lg mb-6 text-left">
-              ✅ {message}
+              {message}
             </div>
             <Link to="/login">
               <button className="bg-gray-800 text-white w-full px-6 py-2 rounded-md hover:bg-gray-900 transition">
@@ -73,13 +73,12 @@ const ForgotPassword = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Ingresa tu correo asociado"
-                className={`w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                  error ? "border-red-500 focus:ring-red-400" : "border-green-500 focus:ring-green-400"
-                }`}
+                className={`w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 ${error ? "border-red-500 focus:ring-red-400" : "border-green-500 focus:ring-green-400"
+                  }`}
               />
             </div>
             {error && <p className="text-red-500 text-sm">{error}</p>}
-            
+
             <button
               type="submit"
               disabled={loading}

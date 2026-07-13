@@ -4,8 +4,8 @@ const db = require("../database/db");
 const createReservation = (data, callback) => {
   const sql = `
     INSERT INTO tbd_reservaciones
-    (usuario_id, fecha_ingreso, tipo, piso, habitacion, monto)
-    VALUES (?, ?, ?, ?, ?, ?)
+    (usuario_id, fecha_ingreso, tipo, piso, habitacion, monto, estado)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `;
 
   const values = [
@@ -15,6 +15,7 @@ const createReservation = (data, callback) => {
     data.piso,
     data.habitacion,
     data.monto,
+    "pendiente",
   ];
 
   db.query(sql, values, callback);

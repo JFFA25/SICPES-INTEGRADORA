@@ -11,7 +11,10 @@ const AdminReservations = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editData, setEditData] = useState({ piso: "", habitacion: "", monto: "" });
-  
+
+  // Nuevo estado para controlar el estado de carga del reporte
+  const [isGenerating, setIsGenerating] = useState(false);
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -21,7 +24,7 @@ const AdminReservations = () => {
 
   const fetchReservations = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/reservations`, {
+      const res = await fetch(`/api/admin/reservations`, {
         credentials: "include",
       });
 
@@ -53,7 +56,7 @@ const AdminReservations = () => {
         }
       }
 
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/reservations/${id}`, {
+      const res = await fetch(`/api/admin/reservations/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -72,7 +75,7 @@ const AdminReservations = () => {
 
   const saveEdit = async (id: number) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/reservations/${id}`, {
+      const res = await fetch(`/api/admin/reservations/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -91,11 +94,61 @@ const AdminReservations = () => {
   };
 
   const handleLogout = async () => {
-    await fetch(`${import.meta.env.VITE_API_URL}/api/logout`, {
+    await fetch(`/api/logout`, {
       method: "POST",
       credentials: "include",
     });
     navigate("/login");
+  };
+
+  // FUNCIÓN ACTUALIZADA: Maneja correctamente la llamada asíncrona y abre la URL final
+  const generateReport = async () => {
+    if (isGenerating) return;
+    setIsGenerating(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/admin/reportes/general", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include"
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Error interno del servidor.");
+      }
+
+      const data = await res.json();
+
+      if (data && data.url) {
+        // 1. Obtenemos el archivo como un Blobe/Binario para saltarnos el bloqueo del nombre
+        const response = await fetch(data.url);
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+
+        // 2. Creamos un link temporal para forzar la descarga
+        const link = document.createElement("a");
+        link.href = blobUrl;
+
+        // Añadimos la fecha actual al nombre para que lleven control (Ej: reporte_SICPES_2026-07-13.pdf)
+        const fecha = new Date().toISOString().split('T')[0];
+        link.download = `reporte_SICPES_${fecha}.pdf`;
+
+        // 3. Gatillamos la descarga y limpiamos la memoria
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+
+      } else {
+        throw new Error("La respuesta del servidor no contiene una URL válida.");
+      }
+    } catch (err: any) {
+      setError(err.message || "Ocurrió un error inesperado al intentar generar el PDF.");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const counts = {
@@ -187,22 +240,51 @@ const AdminReservations = () => {
               <p className="mt-2 text-sm text-slate-600 max-w-2xl">Revisa y administra las solicitudes de reserva de los estudiantes.</p>
             </div>
 
-            <div className="relative w-full sm:w-72">
-              <svg
-                className="absolute left-3 top-3 w-5 h-5 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            {/* CONTENEDOR DE ACCIONES: Colocamos el botón de Reporte al lado del buscador */}
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto items-center">
+              <button
+                onClick={generateReport}
+                disabled={isGenerating}
+                className={`flex items-center justify-center gap-2 px-5 py-3 text-white rounded-full text-sm font-semibold transition shadow-sm w-full sm:w-auto ${isGenerating
+                    ? "bg-blue-400 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700"
+                  }`}
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input
-                type="text"
-                placeholder="Buscar reservaciones..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-full border border-gray-200 bg-white pl-11 pr-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 shadow-sm transition"
-              />
+                {isGenerating ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Generando PDF...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Generar reporte PDF
+                  </>
+                )}
+              </button>
+
+              <div className="relative w-full sm:w-72">
+                <svg
+                  className="absolute left-3 top-3 w-5 h-5 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Buscar reservaciones..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full rounded-full border border-gray-200 bg-white pl-11 pr-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 shadow-sm transition"
+                />
+              </div>
             </div>
           </div>
 
@@ -221,8 +303,8 @@ const AdminReservations = () => {
                 key={f}
                 onClick={() => setFilter(f)}
                 className={`px-4 py-2 rounded-full text-sm font-semibold transition ${filter === f
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
               >
                 {f}
@@ -308,12 +390,12 @@ const AdminReservations = () => {
                       <td className="px-4 py-4 text-sm">
                         <span
                           className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${r.estado === "pendiente"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : r.estado === "aceptada"
-                                ? "bg-green-100 text-green-800"
-                                : r.estado === "rechazada" || r.estado === "cancelada"
-                                  ? "bg-red-100 text-red-800"
-                                  : "bg-gray-100 text-gray-800"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : r.estado === "aceptada"
+                              ? "bg-green-100 text-green-800"
+                              : r.estado === "rechazada" || r.estado === "cancelada"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-gray-100 text-gray-800"
                             }`}
                         >
                           {String(r.estado).toUpperCase()}
@@ -408,20 +490,19 @@ const AdminReservations = () => {
                       </svg>
                     </button>
                     {getPageNumbers().map((number, index) => (
-                        <button
-                          key={index}
-                          onClick={() => typeof number === 'number' && setCurrentPage(number)}
-                          disabled={number === '...'}
-                          className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold focus:z-20 ${
-                            currentPage === number
-                              ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
-                              : number === '...'
-                              ? 'text-gray-500 ring-1 ring-inset ring-gray-300 bg-gray-50 cursor-default'
-                              : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50'
+                      <button
+                        key={index}
+                        onClick={() => typeof number === 'number' && setCurrentPage(number)}
+                        disabled={number === '...'}
+                        className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold focus:z-20 ${currentPage === number
+                          ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
+                          : number === '...'
+                            ? 'text-gray-500 ring-1 ring-inset ring-gray-300 bg-gray-50 cursor-default'
+                            : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50'
                           }`}
-                        >
-                          {number}
-                        </button>
+                      >
+                        {number}
+                      </button>
                     ))}
                     <button
                       onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}

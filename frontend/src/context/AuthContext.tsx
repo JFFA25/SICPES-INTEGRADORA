@@ -21,33 +21,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   const checkSession = async () => {
-    const savedToken = localStorage.getItem("token");
-    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+    try {
+      const res = await fetch(`/api/session`, {
+        credentials: "include",
+      });
 
-    if (savedToken) {
-      try {
-        const res = await fetch(`${apiUrl}/api/session`, {
-          headers: {
-            "Authorization": `Bearer ${savedToken}`
-          }
+      if (res.ok) {
+        const data = await res.json();
+        setUser({
+          id: data.id,
+          nombre: data.nombre,
+          email: data.sub,
+          rol: data.rol,
         });
-        
-        if (res.ok) {
-          const data = await res.json();
-          setUser({
-            id: data.id,
-            nombre: data.nombre,
-            email: data.sub,
-            rol: data.rol
-          });
-        } else {
-          logout();
-        }
-      } catch (error) {
-        console.error("Error validando sesión:", error);
+      } else {
         setUser(null);
       }
+    } catch (error) {
+      console.error("Error validando sesión:", error);
+      setUser(null);
     }
+
     setLoading(false);
   };
 
@@ -56,7 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // Inactivity timeout logic (5 minutes)
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const resetTimer = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -90,7 +84,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = (userData: User, token: string) => {
     setUser(userData);
-    localStorage.setItem("token", token);
+    if (token) {
+      localStorage.setItem("token", token);
+    }
   };
 
   const logout = () => {

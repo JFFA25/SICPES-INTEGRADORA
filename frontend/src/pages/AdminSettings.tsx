@@ -19,7 +19,7 @@ const AdminSettings = () => {
 
   const fetchSettings = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/settings`, {
+      const res = await fetch(`/api/admin/settings`, {
         credentials: "include",
       });
 
@@ -42,7 +42,7 @@ const AdminSettings = () => {
 
   const fetchRooms = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/rooms`, {
+      const res = await fetch(`/api/rooms`, {
         credentials: "include",
       });
       if (!res.ok) {
@@ -67,7 +67,7 @@ const AdminSettings = () => {
     setRoomsMessage("");
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/rooms`, {
+      const res = await fetch(`/api/rooms`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -97,7 +97,7 @@ const AdminSettings = () => {
     if (!confirmed) return;
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/rooms/${encodeURIComponent(piso)}`, {
+      const res = await fetch(`/api/rooms/${encodeURIComponent(piso)}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -120,7 +120,7 @@ const AdminSettings = () => {
     setMessage("");
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/settings`, {
+      const res = await fetch(`/api/admin/settings`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -165,7 +165,7 @@ const AdminSettings = () => {
         <button
           className="flex items-center gap-2 px-5 py-2 border border-pink-200 text-pink-500 font-semibold rounded-xl text-sm hover:bg-pink-50 transition"
           onClick={async () => {
-            await fetch(`${import.meta.env.VITE_API_URL}/api/logout`, {
+            await fetch(`/api/logout`, {
               method: "POST",
               credentials: "include",
             });

@@ -1,5 +1,6 @@
 const { createPayment, findPaymentByReservationPeriod, getPaymentById, getPaymentsByUser, getAllPaymentsAdmin, updatePaymentStatus } = require("../models/payment.model");
 const { createQuota, findQuotaByReservationPeriod, updateQuotaStatusByReservationPeriod } = require("../models/quota.model");
+const { sendWhatsApp } = require("../utils/notifications");
 const db = require("../database/db");
 
 const requestPayment = (req, res) => {
@@ -170,16 +171,28 @@ const updateStatus = (req, res) => {
       return res.status(404).json({ error: "Pago no encontrado" });
     }
 
-    updatePaymentStatus(id, estado, (err2) => {
+    const normalizedStatus = String(estado || "").toLowerCase();
+    const dbStatus = normalizedStatus === "pagado" || normalizedStatus === "aprobado" ? "Pagado" : normalizedStatus === "rechazado" || normalizedStatus === "atrasado" ? "Atrasado" : "Pendiente";
+
+    updatePaymentStatus(id, dbStatus, async (err2) => {
       if (err2) {
         console.error("Error al actualizar pago:", err2);
         return res.status(500).json({ error: "Error al actualizar" });
       }
 
-      if (estado === "pagado") {
-        updateQuotaStatusByReservationPeriod(payment.reservacion_id, payment.mes, payment.anio, "pagada", (err3) => {
+      if (normalizedStatus === "pagado" || normalizedStatus === "aprobado") {
+        updateQuotaStatusByReservationPeriod(payment.reservacion_id, payment.mes, payment.anio, "pagada", async (err3) => {
           if (err3) console.error("Error al actualizar cuota:", err3);
-          return res.json({ message: "Estado de pago actualizado" });
+
+          const userQuery = "SELECT u.nombre, u.email, u.telefono FROM tbd_usuarios u JOIN tbd_reservaciones r ON r.usuario_id = u.id WHERE r.id = ? LIMIT 1";
+          db.query(userQuery, [payment.reservacion_id], async (userErr, userRows) => {
+            if (!userErr && userRows && userRows[0]) {
+              const user = userRows[0];
+              const message = `Hola ${user.nombre}, tu pago del mes ${payment.mes}/${payment.anio} ha sido confirmado en SICPES.`;
+              await sendWhatsApp({ to: user.telefono || user.email, body: message });
+            }
+            return res.json({ message: "Estado de pago actualizado" });
+          });
         });
       } else {
         res.json({ message: "Estado de pago actualizado" });

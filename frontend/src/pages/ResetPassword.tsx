@@ -17,7 +17,7 @@ const ResetPassword = () => {
     document.title = "Ajustar Contraseña";
     
     // Verificar si el token es válido
-    fetch(`${import.meta.env.VITE_API_URL}/api/reset-password/${token}`)
+    fetch(`/api/reset-password/${token}`)
       .then(res => {
         if (!res.ok) {
           navigate("/error"); // Redirigir a pantalla de error si el token ya se usó o no existe
@@ -45,7 +45,7 @@ const ResetPassword = () => {
     setError("");
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/reset-password/${token}`, {
+      const res = await fetch(`/api/reset-password/${token}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ newPassword: password })

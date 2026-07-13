@@ -22,7 +22,7 @@ const Payments = () => {
             let reservationData: any = null;
             try {
                 // SESIÓN
-                const sessionRes = await fetch(`${import.meta.env.VITE_API_URL}/api/session`, {
+                const sessionRes = await fetch(`/api/session`, {
                     credentials: "include",
                 });
 
@@ -34,7 +34,7 @@ const Payments = () => {
                 setUser(sessionData);
 
                 // RESERVACIÓN
-                const res = await fetch(`${import.meta.env.VITE_API_URL}/api/reservation/me`, {
+                const res = await fetch(`/api/reservation/me`, {
                     credentials: "include",
                 });
 
@@ -49,7 +49,7 @@ const Payments = () => {
                 }
 
                 // PAGOS
-                const payRes = await fetch(`${import.meta.env.VITE_API_URL}/api/payment/me`, {
+                const payRes = await fetch(`/api/payment/me`, {
                     credentials: "include",
                 });
                 if (payRes.ok) {
@@ -137,7 +137,7 @@ const Payments = () => {
         };
         
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/payment/request`, {
+            const res = await fetch(`/api/payment/request`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
@@ -146,7 +146,7 @@ const Payments = () => {
             
             if (res.ok) {
                 setCurrentMonthStatus("pendiente");
-                const pRes = await fetch(`${import.meta.env.VITE_API_URL}/api/payment/me`, { credentials: "include" });
+                const pRes = await fetch(`/api/payment/me`, { credentials: "include" });
                 if (pRes.ok) setPayments(await pRes.json());
             } else {
                 const errorData = await res.json().catch(() => ({ error: "Error desconocido" }));
@@ -158,7 +158,7 @@ const Payments = () => {
     };
 
     const handleLogout = async () => {
-        await fetch(`${import.meta.env.VITE_API_URL}/api/logout`, {
+        await fetch(`/api/logout`, {
             method: "POST",
             credentials: "include",
         });

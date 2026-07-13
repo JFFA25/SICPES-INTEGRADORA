@@ -98,7 +98,7 @@ const Reservation = () => {
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/rooms`);
+        const res = await fetch(`/api/rooms`);
         if (res.ok) {
           const data = await res.json();
           const rows = Array.isArray(data) ? data : data.lista || [];
@@ -117,7 +117,7 @@ const Reservation = () => {
 
     const fetchSettings = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/settings`);
+        const res = await fetch(`/api/settings`);
         if (res.ok) {
           const data = await res.json();
           setPrices({
@@ -146,7 +146,7 @@ const Reservation = () => {
   useEffect(() => {
     const checkReservation = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/reservation/me`, {
+        const res = await fetch(`/api/reservation/me`, {
           credentials: "include",
         });
 
@@ -171,7 +171,7 @@ const Reservation = () => {
     const fetchOccupied = async () => {
       try {
         const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/reservation/occupied?piso=${form.piso}`
+          `/api/reservation/occupied?piso=${form.piso}`
         );
 
         const data = await res.json();
@@ -214,7 +214,7 @@ const Reservation = () => {
     }
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/reservation`, {
+      const res = await fetch(`/api/reservation`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -264,7 +264,7 @@ const Reservation = () => {
           <button
             className="bg-gray-900 border border-gray-800 text-white px-5 py-2 rounded-xl hover:bg-gray-800 transition shadow-sm ml-2"
             onClick={async () => {
-              await fetch(`${import.meta.env.VITE_API_URL}/api/logout`, {
+              await fetch(`/api/logout`, {
                 method: "POST",
                 credentials: "include",
               });
