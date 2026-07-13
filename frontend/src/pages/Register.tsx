@@ -95,11 +95,12 @@ const Register = () => {
       }
       const formattedPhone = phoneInput ? `whatsapp:${phoneInput}` : "";
 
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/register`, {
+      const res = await fetch("/api/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({
           ...form,
           telefono: formattedPhone,
@@ -226,7 +227,7 @@ const Register = () => {
           </div>
 
           {/* TELÉFONO (WHATSAPP) */}
-          <div>ñ
+          <div>
             <label className="text-green-600 font-medium">Teléfono</label>
             <input
               type="text"

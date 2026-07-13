@@ -24,7 +24,7 @@ const VerifyAccount = () => {
     setLoading(true);
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/verify-otp`, {
+      const res = await fetch(`/api/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, code }),
@@ -46,7 +46,7 @@ const VerifyAccount = () => {
   const handleResend = async () => {
     if (!email) return;
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/resend-confirmation`, {
+      const res = await fetch(`/api/resend-confirmation`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

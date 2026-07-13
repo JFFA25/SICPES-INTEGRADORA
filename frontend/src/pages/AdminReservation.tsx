@@ -21,7 +21,7 @@ const AdminReservations = () => {
 
   const fetchReservations = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/reservations`, {
+      const res = await fetch(`/api/admin/reservations`, {
         credentials: "include",
       });
 
@@ -53,7 +53,7 @@ const AdminReservations = () => {
         }
       }
 
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/reservations/${id}`, {
+      const res = await fetch(`/api/admin/reservations/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -72,7 +72,7 @@ const AdminReservations = () => {
 
   const saveEdit = async (id: number) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/reservations/${id}`, {
+      const res = await fetch(`/api/admin/reservations/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -91,7 +91,7 @@ const AdminReservations = () => {
   };
 
   const handleLogout = async () => {
-    await fetch(`${import.meta.env.VITE_API_URL}/api/logout`, {
+    await fetch(`/api/logout`, {
       method: "POST",
       credentials: "include",
     });

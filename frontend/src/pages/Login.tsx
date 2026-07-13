@@ -24,7 +24,7 @@ const Login = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
-    setError(""); 
+    setError("");
   };
 
   // SUBMIT
@@ -43,10 +43,12 @@ const Login = () => {
     }
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
-      const res = await fetch(`${apiUrl}/api/login`, {
+      // Utiliza el proxy configurado en Vite
+      const res = await fetch("/api/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         credentials: "include",
         body: JSON.stringify(form),
       });
@@ -58,32 +60,35 @@ const Login = () => {
         return;
       }
 
-      const sessionRes = await fetch(`${apiUrl}/api/session`, {
+      const sessionRes = await fetch("/api/session", {
         credentials: "include",
       });
 
-      if (sessionRes.ok) {
-        const sessionData = await sessionRes.json();
-        
-        login({
+      if (!sessionRes.ok) {
+        setError("Error al validar la sesión del usuario.");
+        return;
+      }
+
+      const sessionData = await sessionRes.json();
+
+      login(
+        {
           id: sessionData.id,
           nombre: sessionData.nombre,
           email: sessionData.sub,
           rol: sessionData.rol,
-        }, "");
+        },
+        ""
+      );
 
-        if (sessionData.rol === "admin") {
-          navigate("/admin/reservations");
-        } else {
-          navigate("/dashboard");
-        }
+      if (sessionData.rol === "admin") {
+        navigate("/admin/reservations");
       } else {
-        setError("Error al validar la sesión del usuario.");
+        navigate("/dashboard");
       }
-
     } catch (err) {
+      console.error("Error al conectar:", err);
       setError("Error al conectar con el servidor central.");
-      console.error(err);
     }
   };
 
@@ -96,7 +101,9 @@ const Login = () => {
           </Link>
         </div>
 
-        <h2 className="text-2xl font-bold text-green-600 mb-6">Inicia sesión</h2>
+        <h2 className="text-2xl font-bold text-green-600 mb-6">
+          Inicia sesión
+        </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-left">
           <div>
@@ -108,7 +115,9 @@ const Login = () => {
               onChange={handleChange}
               placeholder="Ingresa tu correo electrónico"
               className={`w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                error ? "border-red-500 focus:ring-red-400" : "border-green-500 focus:ring-green-400"
+                error
+                  ? "border-red-500 focus:ring-red-400"
+                  : "border-green-500 focus:ring-green-400"
               }`}
             />
           </div>
@@ -123,7 +132,9 @@ const Login = () => {
                 onChange={handleChange}
                 placeholder="Ingresa tu contraseña"
                 className={`w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                  error ? "border-red-500 focus:ring-red-400" : "border-green-500 focus:ring-green-400"
+                  error
+                    ? "border-red-500 focus:ring-red-400"
+                    : "border-green-500 focus:ring-green-400"
                 }`}
               />
               <button
@@ -136,7 +147,9 @@ const Login = () => {
             </div>
           </div>
 
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+          {error && (
+            <p className="text-red-500 text-sm text-center">{error}</p>
+          )}
 
           <button
             type="submit"
@@ -147,8 +160,19 @@ const Login = () => {
         </form>
 
         <div className="mt-4 text-sm">
-          <p>¿No tienes una cuenta? <Link to="/register" className="text-green-600 hover:underline">Regístrate</Link></p>
-          <Link to="/forgot-password" className="text-green-600 mt-2 block cursor-pointer hover:underline">¿Olvidaste tu contraseña?</Link>
+          <p>
+            ¿No tienes una cuenta?{" "}
+            <Link to="/register" className="text-green-600 hover:underline">
+              Regístrate
+            </Link>
+          </p>
+
+          <Link
+            to="/forgot-password"
+            className="text-green-600 mt-2 block cursor-pointer hover:underline"
+          >
+            ¿Olvidaste tu contraseña?
+          </Link>
         </div>
       </div>
     </div>
