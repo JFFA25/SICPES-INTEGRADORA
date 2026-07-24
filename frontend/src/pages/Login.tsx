@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Eye, EyeOff, LoaderCircle } from "lucide-react";
 import icon from "../assets/images/icon.ico";
 import { useAuth } from "../context/AuthContext";
+import Alert from "../components/Alert";
+import { useTimedMessage } from "../hooks/useTimedMessage";
 
 const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { message, showError, clear } = useTimedMessage();
 
   useEffect(() => {
     document.title = "Login";
@@ -17,14 +21,16 @@ const Login = () => {
     password: "",
   });
 
-  const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const hasError = message?.type === "error";
 
   // INPUTS
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
-    setError("");
+    clear();
   };
 
   // SUBMIT
@@ -32,15 +38,17 @@ const Login = () => {
     e.preventDefault();
 
     if (!form.email.trim() || !form.password.trim()) {
-      setError("Todos los campos son obligatorios.");
+      showError("Todos los campos son obligatorios.");
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(form.email)) {
-      setError("Por favor, ingresa un correo válido.");
+      showError("Por favor, ingresa un correo válido.");
       return;
     }
+
+    setIsSubmitting(true);
 
     try {
       // Utiliza el proxy configurado en Vite
@@ -56,7 +64,8 @@ const Login = () => {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || data.detail || "Credenciales incorrectas");
+        showError(data.error || data.detail || "Credenciales incorrectas");
+        setIsSubmitting(false);
         return;
       }
 
@@ -65,7 +74,8 @@ const Login = () => {
       });
 
       if (!sessionRes.ok) {
-        setError("Error al validar la sesión del usuario.");
+        showError("Error al validar la sesión del usuario.");
+        setIsSubmitting(false);
         return;
       }
 
@@ -88,13 +98,14 @@ const Login = () => {
       }
     } catch (err) {
       console.error("Error al conectar:", err);
-      setError("Error al conectar con el servidor central.");
+      showError("Error al conectar con el servidor central.");
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-200 animate-page-transition">
-      <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md text-center">
+    <div className="min-h-screen flex items-center justify-center bg-gray-200 animate-page-transition transition-colors relative">
+      <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md text-center transition-colors">
         <div className="flex justify-center mb-4">
           <Link to="/">
             <img src={icon} alt="icono" className="w-16 cursor-pointer" />
@@ -105,17 +116,22 @@ const Login = () => {
           Inicia sesión
         </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-left">
+        <form onSubmit={handleSubmit} className="space-y-4 text-left" noValidate>
           <div>
-            <label className="text-green-600 font-medium">Correo</label>
+            <label htmlFor="login-email" className="text-green-600 font-medium">
+              Correo
+            </label>
             <input
+              id="login-email"
               type="email"
               name="email"
+              autoComplete="email"
               value={form.email}
               onChange={handleChange}
               placeholder="Ingresa tu correo electrónico"
-              className={`w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                error
+              aria-invalid={hasError}
+              className={`w-full mt-1 px-4 py-2 border rounded-md bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 ${
+                hasError
                   ? "border-red-500 focus:ring-red-400"
                   : "border-green-500 focus:ring-green-400"
               }`}
@@ -123,16 +139,21 @@ const Login = () => {
           </div>
 
           <div>
-            <label className="text-green-600 font-medium">Contraseña</label>
+            <label htmlFor="login-password" className="text-green-600 font-medium">
+              Contraseña
+            </label>
             <div className="relative">
               <input
+                id="login-password"
                 type={showPassword ? "text" : "password"}
                 name="password"
+                autoComplete="current-password"
                 value={form.password}
                 onChange={handleChange}
                 placeholder="Ingresa tu contraseña"
-                className={`w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                  error
+                aria-invalid={hasError}
+                className={`w-full mt-1 px-4 py-2 pr-11 border rounded-md bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 ${
+                  hasError
                     ? "border-red-500 focus:ring-red-400"
                     : "border-green-500 focus:ring-green-400"
                 }`}
@@ -140,26 +161,33 @@ const Login = () => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3 text-sm text-gray-600"
+                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition"
               >
-                {showPassword ? "Ocultar" : "Ver"}
+                {showPassword ? <EyeOff className="w-5 h-5" strokeWidth={2} /> : <Eye className="w-5 h-5" strokeWidth={2} />}
               </button>
             </div>
           </div>
 
-          {error && (
-            <p className="text-red-500 text-sm text-center">{error}</p>
-          )}
+          {message && <Alert type={message.type} onClose={clear}>{message.text}</Alert>}
 
           <button
             type="submit"
-            className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition"
+            disabled={isSubmitting}
+            className="w-full flex items-center justify-center gap-2 bg-green-600 text-white py-2 rounded-md hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition"
           >
-            Entrar
+            {isSubmitting ? (
+              <>
+                <LoaderCircle className="w-5 h-5 animate-spin" strokeWidth={2.25} />
+                Entrando...
+              </>
+            ) : (
+              "Entrar"
+            )}
           </button>
         </form>
 
-        <div className="mt-4 text-sm">
+        <div className="mt-4 text-sm text-gray-700">
           <p>
             ¿No tienes una cuenta?{" "}
             <Link to="/register" className="text-green-600 hover:underline">

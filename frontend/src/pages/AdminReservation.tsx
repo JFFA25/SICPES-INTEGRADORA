@@ -1,22 +1,57 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import icon from "../assets/images/icon.ico";
+import { Search } from "lucide-react";
+import AdminNavbar from "../components/admin/AdminNavbar";
+import StatCard from "../components/admin/StatCard";
+import Pagination from "../components/admin/Pagination";
+import StatusBadge from "../components/StatusBadge";
+import ConfirmModal from "../components/ConfirmModal";
+import Alert from "../components/Alert";
+import { useTimedMessage } from "../hooks/useTimedMessage";
+
+interface Reservation {
+  id: number;
+  nombre: string;
+  fecha_ingreso: string | null;
+  tipo: string;
+  piso: string;
+  habitacion: string;
+  monto: string | number;
+  estado: string;
+}
+
+interface EditData {
+  piso: string;
+  habitacion: string;
+  monto: string;
+}
+
+const FILTERS = ["Todas", "Pendientes", "Aceptadas", "Rechazadas", "Finalizadas"] as const;
+type FilterValue = typeof FILTERS[number];
+
+const FILTER_TO_ESTADO: Record<FilterValue, string | null> = {
+  Todas: null,
+  Pendientes: "pendiente",
+  Aceptadas: "aceptada",
+  Rechazadas: "rechazada",
+  Finalizadas: "finalizada",
+};
 
 const AdminReservations = () => {
   const navigate = useNavigate();
 
-  const [reservations, setReservations] = useState<any[]>([]);
-  const [error, setError] = useState("");
-  const [filter, setFilter] = useState("Todas");
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const { message, showError, clear } = useTimedMessage();
+  const [filter, setFilter] = useState<FilterValue>("Todas");
   const [searchTerm, setSearchTerm] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [editData, setEditData] = useState({ piso: "", habitacion: "", monto: "" });
-
-  // Nuevo estado para controlar el estado de carga del reporte
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [editData, setEditData] = useState<EditData>({ piso: "", habitacion: "", monto: "" });
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // Modal de confirmación para el rechazo (reemplaza window.prompt)
+  const [rejectingId, setRejectingId] = useState<number | null>(null);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -36,24 +71,21 @@ const AdminReservations = () => {
       const data = await res.json();
       setReservations(data);
     } catch {
-      setError("Error al cargar reservaciones");
+      showError("Error al cargar reservaciones");
     }
   };
 
   useEffect(() => {
     fetchReservations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const updateStatus = async (id: number, estado: string) => {
+  const updateStatus = async (id: number, estado: string, motivoRechazo?: string) => {
     try {
-      let payload: any = { estado };
+      const payload: { estado: string; motivo_rechazo?: string } = { estado };
 
-      if (estado === "rechazada") {
-        const motivo = window.prompt("Especifique el motivo del rechazo (opcional):");
-        if (motivo === null) return;
-        if (motivo.trim() !== "") {
-          payload.motivo_rechazo = motivo;
-        }
+      if (estado === "rechazada" && motivoRechazo && motivoRechazo.trim() !== "") {
+        payload.motivo_rechazo = motivoRechazo;
       }
 
       const res = await fetch(`/api/admin/reservations/${id}`, {
@@ -64,13 +96,20 @@ const AdminReservations = () => {
       });
 
       if (!res.ok) {
-        setError("Error al actualizar");
+        showError("Error al actualizar");
         return;
       }
       fetchReservations();
     } catch {
-      setError("Error del servidor");
+      showError("Error del servidor");
     }
+  };
+
+  const handleRejectConfirm = (motivo?: string) => {
+    if (rejectingId !== null) {
+      updateStatus(rejectingId, "rechazada", motivo);
+    }
+    setRejectingId(null);
   };
 
   const saveEdit = async (id: number) => {
@@ -83,76 +122,18 @@ const AdminReservations = () => {
       });
 
       if (!res.ok) {
-        setError("Error al actualizar");
+        showError("Error al actualizar");
         return;
       }
       setEditingId(null);
       fetchReservations();
     } catch {
-      setError("Error del servidor");
+      showError("Error del servidor");
     }
   };
 
-  const handleLogout = async () => {
-    await fetch(`/api/logout`, {
-      method: "POST",
-      credentials: "include",
-    });
-    navigate("/login");
-  };
-
-  // FUNCIÓN ACTUALIZADA: Maneja correctamente la llamada asíncrona y abre la URL final
-  const generateReport = async () => {
-    if (isGenerating) return;
-    setIsGenerating(true);
-    setError("");
-
-    try {
-      const res = await fetch("/api/admin/reportes/general", {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include"
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || "Error interno del servidor.");
-      }
-
-      const data = await res.json();
-
-      if (data && data.url) {
-        // 1. Obtenemos el archivo como un Blobe/Binario para saltarnos el bloqueo del nombre
-        const response = await fetch(data.url);
-        const blob = await response.blob();
-        const blobUrl = window.URL.createObjectURL(blob);
-
-        // 2. Creamos un link temporal para forzar la descarga
-        const link = document.createElement("a");
-        link.href = blobUrl;
-
-        // Añadimos la fecha actual al nombre para que lleven control (Ej: reporte_SICPES_2026-07-13.pdf)
-        const fecha = new Date().toISOString().split('T')[0];
-        link.download = `reporte_SICPES_${fecha}.pdf`;
-
-        // 3. Gatillamos la descarga y limpiamos la memoria
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(blobUrl);
-
-      } else {
-        throw new Error("La respuesta del servidor no contiene una URL válida.");
-      }
-    } catch (err: any) {
-      setError(err.message || "Ocurrió un error inesperado al intentar generar el PDF.");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const counts = {
-    Total: reservations.length,
+  const counts: Record<FilterValue, number> = {
+    Todas: reservations.length,
     Pendientes: reservations.filter((r) => r.estado === "pendiente").length,
     Aceptadas: reservations.filter((r) => r.estado === "aceptada").length,
     Rechazadas: reservations.filter((r) => r.estado === "rechazada").length,
@@ -160,13 +141,8 @@ const AdminReservations = () => {
   };
 
   const filteredReservations = reservations.filter((r) => {
-    let targetState = "";
-    if (filter === "Pendientes") targetState = "pendiente";
-    else if (filter === "Aceptadas") targetState = "aceptada";
-    else if (filter === "Rechazadas") targetState = "rechazada";
-    else if (filter === "Finalizadas") targetState = "finalizada";
-
-    const matchesFilter = filter === "Todas" || r.estado === targetState;
+    const targetState = FILTER_TO_ESTADO[filter];
+    const matchesFilter = targetState === null || r.estado === targetState;
     const searchString = `${r.nombre} ${r.id} ${r.tipo} ${r.estado}`.toLowerCase();
     const matchesSearch = searchString.includes(searchTerm.toLowerCase());
     return matchesFilter && matchesSearch;
@@ -177,60 +153,16 @@ const AdminReservations = () => {
   const currentItems = filteredReservations.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredReservations.length / itemsPerPage);
 
-  const getPageNumbers = () => {
-    const pages = [];
-    if (totalPages <= 7) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else {
-      if (currentPage <= 4) {
-        for (let i = 1; i <= 5; i++) pages.push(i);
-        pages.push('...');
-        pages.push(totalPages);
-      } else if (currentPage >= totalPages - 3) {
-        pages.push(1);
-        pages.push('...');
-        for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
-      } else {
-        pages.push(1);
-        pages.push('...');
-        for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
-        pages.push('...');
-        pages.push(totalPages);
-      }
-    }
-    return pages;
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 animate-page-transition">
-      <nav className="flex items-center justify-between px-8 py-3 bg-white border-b border-gray-200 shadow-sm">
-        <div className="flex items-center gap-3">
-          <img src={icon} alt="SICPES" className="w-10 h-10 object-contain" />
-          <span className="text-2xl font-bold text-blue-700 tracking-tight">SICPES</span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Link to="/admin/reservations" className="flex items-center gap-2 px-5 py-2.5 bg-blue-50 text-blue-700 font-semibold rounded-xl text-sm transition">
-            Reservaciones
-          </Link>
-          <Link to="/admin/payments" className="flex items-center gap-2 px-5 py-2.5 text-gray-500 font-semibold rounded-xl text-sm hover:bg-gray-50 transition">
-            Pagos
-          </Link>
-          <Link to="/admin/settings" className="flex items-center gap-2 px-5 py-2.5 text-gray-500 font-semibold rounded-xl text-sm hover:bg-gray-50 transition">
-            Configuración
-          </Link>
-        </div>
-
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-2 px-5 py-2 border border-pink-200 text-pink-500 font-semibold rounded-xl text-sm hover:bg-pink-50 transition"
-        >
-          Cerrar sesión
-        </button>
-      </nav>
+    <div className="min-h-screen bg-gray-50 animate-page-transition transition-colors">
+      <AdminNavbar active="reservations" />
 
       <main className="px-8 py-10 max-w-[1400px] mx-auto w-full">
-        {error && <p className="text-red-500 mb-4 bg-red-50 p-3 rounded-lg border border-red-200">{error}</p>}
+        {message && (
+          <div className="mb-4">
+            <Alert type={message.type} onClose={clear}>{message.text}</Alert>
+          </div>
+        )}
 
         <div className="mb-8 space-y-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -238,77 +170,40 @@ const AdminReservations = () => {
               <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Panel administrativo</p>
               <h1 className="mt-3 text-3xl font-bold text-slate-900">Reservaciones</h1>
               <p className="mt-2 text-sm text-slate-600 max-w-2xl">Revisa y administra las solicitudes de reserva de los estudiantes.</p>
+              <Link
+                to="/admin/reports"
+                className="inline-flex items-center gap-1 mt-2 text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+              >
+                Ir a Reportes →
+              </Link>
             </div>
 
-            {/* CONTENEDOR DE ACCIONES: Colocamos el botón de Reporte al lado del buscador */}
+            {/* Buscador */}
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto items-center">
-              <button
-                onClick={generateReport}
-                disabled={isGenerating}
-                className={`flex items-center justify-center gap-2 px-5 py-3 text-white rounded-full text-sm font-semibold transition shadow-sm w-full sm:w-auto ${isGenerating
-                    ? "bg-blue-400 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700"
-                  }`}
-              >
-                {isGenerating ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    Generando PDF...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Generar reporte PDF
-                  </>
-                )}
-              </button>
-
               <div className="relative w-full sm:w-72">
-                <svg
-                  className="absolute left-3 top-3 w-5 h-5 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" strokeWidth={2} />
+                <label htmlFor="search-reservations" className="sr-only">Buscar reservaciones</label>
                 <input
+                  id="search-reservations"
                   type="text"
                   placeholder="Buscar reservaciones..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full rounded-full border border-gray-200 bg-white pl-11 pr-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 shadow-sm transition"
+                  className="w-full rounded-full border border-gray-200 bg-white text-gray-900 pl-11 pr-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 shadow-sm transition"
                 />
               </div>
             </div>
           </div>
 
           <div className="grid gap-6 md:grid-cols-5">
-            {Object.entries(counts).map(([label, value]) => (
-              <div key={label} className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition-transform hover:-translate-y-1">
-                <p className="text-sm text-slate-500">{label}</p>
-                <p className="mt-4 text-3xl font-semibold text-slate-900">{value}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            {['Todas', 'Pendientes', 'Aceptadas', 'Rechazadas', 'Finalizadas'].map((f) => (
-              <button
+            {FILTERS.map((f) => (
+              <StatCard
                 key={f}
+                label={f}
+                value={counts[f]}
+                active={filter === f}
                 onClick={() => setFilter(f)}
-                className={`px-4 py-2 rounded-full text-sm font-semibold transition ${filter === f
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
-              >
-                {f}
-              </button>
+              />
             ))}
           </div>
         </div>
@@ -381,25 +276,14 @@ const AdminReservations = () => {
                             type="number"
                             value={editData.monto}
                             onChange={(e) => setEditData({ ...editData, monto: e.target.value })}
-                            className="w-24 rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-24 rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                           />
                         ) : (
                           `$${r.monto || "0.00"}`
                         )}
                       </td>
                       <td className="px-4 py-4 text-sm">
-                        <span
-                          className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${r.estado === "pendiente"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : r.estado === "aceptada"
-                              ? "bg-green-100 text-green-800"
-                              : r.estado === "rechazada" || r.estado === "cancelada"
-                                ? "bg-red-100 text-red-800"
-                                : "bg-gray-100 text-gray-800"
-                            }`}
-                        >
-                          {String(r.estado).toUpperCase()}
-                        </span>
+                        <StatusBadge status={r.estado} />
                       </td>
                       <td className="px-4 py-4 text-sm">
                         <div className="flex flex-wrap gap-2">
@@ -424,7 +308,7 @@ const AdminReservations = () => {
                                 <button
                                   onClick={() => {
                                     setEditingId(r.id);
-                                    setEditData({ piso: r.piso, habitacion: r.habitacion, monto: r.monto });
+                                    setEditData({ piso: r.piso, habitacion: r.habitacion, monto: String(r.monto) });
                                   }}
                                   className="text-xs bg-white border border-blue-200 text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-full font-semibold transition"
                                 >
@@ -437,7 +321,7 @@ const AdminReservations = () => {
                                   Aceptar
                                 </button>
                                 <button
-                                  onClick={() => updateStatus(r.id, "rechazada")}
+                                  onClick={() => setRejectingId(r.id)}
                                   className="text-xs bg-white border border-red-200 text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-full font-semibold transition"
                                 >
                                   Rechazar
@@ -469,58 +353,31 @@ const AdminReservations = () => {
             </table>
           </div>
 
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between border-t border-gray-100 bg-white pt-6 mt-2">
-              <div className="flex flex-1 items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-700">
-                    Mostrando <span className="font-semibold">{indexOfFirstItem + 1}</span> a <span className="font-semibold">{Math.min(indexOfLastItem, filteredReservations.length)}</span> de <span className="font-semibold">{filteredReservations.length}</span> resultados
-                  </p>
-                </div>
-                <div>
-                  <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                    <button
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                      className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 disabled:opacity-50"
-                    >
-                      <span className="sr-only">Anterior</span>
-                      <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                    {getPageNumbers().map((number, index) => (
-                      <button
-                        key={index}
-                        onClick={() => typeof number === 'number' && setCurrentPage(number)}
-                        disabled={number === '...'}
-                        className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold focus:z-20 ${currentPage === number
-                          ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
-                          : number === '...'
-                            ? 'text-gray-500 ring-1 ring-inset ring-gray-300 bg-gray-50 cursor-default'
-                            : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50'
-                          }`}
-                      >
-                        {number}
-                      </button>
-                    ))}
-                    <button
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
-                      className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 disabled:opacity-50"
-                    >
-                      <span className="sr-only">Siguiente</span>
-                      <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                  </nav>
-                </div>
-              </div>
-            </div>
-          )}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredReservations.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+          />
         </div>
       </main>
+
+      <ConfirmModal
+        open={rejectingId !== null}
+        title="Rechazar reservación"
+        description="Puedes indicar un motivo de rechazo; el estudiante lo verá en su panel."
+        confirmLabel="Rechazar"
+        cancelLabel="Cancelar"
+        tone="danger"
+        requireInput={{
+          label: "Motivo del rechazo",
+          placeholder: "Ej: Documentación incompleta...",
+          optional: true,
+        }}
+        onConfirm={handleRejectConfirm}
+        onCancel={() => setRejectingId(null)}
+      />
     </div>
   );
 };

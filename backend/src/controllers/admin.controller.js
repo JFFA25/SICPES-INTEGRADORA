@@ -1,17 +1,8 @@
 const db = require("../database/db");
-
-let appSettings = {
-  precioIndividual: 2500,
-  precioCompartida: 1800,
-  emailAdmin: "admin@sicpes.com"
-};
+const { readSettings, writeSettings } = require("../utils/settingsStore");
 
 // OBTENER TODAS LAS RESERVACIONES (ADMIN)
 const getAllReservations = (req, res) => {
-  if (!req.session.user || req.session.user.rol !== "admin") {
-    return res.status(403).json({ error: "Acceso denegado" });
-  }
-
   const sql = `
     SELECT p.*, p.monto_pagado AS monto, u.nombre, u.email, MONTH(p.fecha_pago) AS mes, YEAR(p.fecha_pago) AS anio
     FROM tbd_pagos p
@@ -28,10 +19,6 @@ const getAllReservations = (req, res) => {
 
 // ACTUALIZAR ESTADO DE RESERVACIÓN (ADMIN)
 const updateReservationStatus = (req, res) => {
-  if (!req.session.user || req.session.user.rol !== "admin") {
-    return res.status(403).json({ error: "Acceso denegado" });
-  }
-
   const { id } = req.params;
   const { estado, motivo_rechazo, piso, habitacion, monto } = req.body;
 
@@ -54,10 +41,6 @@ const updateReservationStatus = (req, res) => {
 
 // OBTENER TODOS LOS PAGOS (ADMIN)
 const getAllPayments = (req, res) => {
-  if (!req.session.user || req.session.user.rol !== "admin") {
-    return res.status(403).json({ error: "Acceso denegado" });
-  }
-
   const sql = `
     SELECT p.*, u.nombre, u.email, MONTH(p.fecha_pago) AS mes, YEAR(p.fecha_pago) AS anio
     FROM tbd_pagos p
@@ -74,10 +57,6 @@ const getAllPayments = (req, res) => {
 
 // ACTUALIZAR ESTADO DE PAGO (ADMIN)
 const updatePaymentStatus = (req, res) => {
-  if (!req.session.user || req.session.user.rol !== "admin") {
-    return res.status(403).json({ error: "Acceso denegado" });
-  }
-
   const { id } = req.params;
   const { estado } = req.body;
 
@@ -104,44 +83,32 @@ const updatePaymentStatus = (req, res) => {
 
 // OBTENER CONFIGURACIONES (ADMIN)
 const getSettings = (req, res) => {
-  if (!req.session.user || req.session.user.rol !== "admin") {
-    return res.status(403).json({ error: "Acceso denegado" });
-  }
-
-  res.json(appSettings);
+  res.json(readSettings());
 };
 
 const getPublicSettings = (req, res) => {
-  res.json(appSettings);
+  res.json(readSettings());
 };
 
 // ACTUALIZAR CONFIGURACIONES (ADMIN)
 const updateSettings = (req, res) => {
-  if (!req.session.user || req.session.user.rol !== "admin") {
-    return res.status(403).json({ error: "Acceso denegado" });
-  }
-
   const { precioIndividual, precioCompartida, emailAdmin } = req.body;
 
   if (!precioIndividual || !precioCompartida || !emailAdmin) {
     return res.status(400).json({ error: "Todos los campos son requeridos" });
   }
 
-  appSettings = {
+  const updated = writeSettings({
     precioIndividual,
     precioCompartida,
     emailAdmin,
-  };
+  });
 
-  res.json({ message: "Configuraciones actualizadas" });
+  res.json({ message: "Configuraciones actualizadas", settings: updated });
 };
 
 // GENERAR DATOS DE PRUEBA (MOCK DATA)
 const generateMockData = (req, res) => {
-  if (!req.session.user || req.session.user.rol !== "admin") {
-    return res.status(403).json({ error: "Acceso denegado" });
-  }
-
   const { cantidad = 10, estado_reservacion = null, estado_pago = null, motivo_rechazo = null } = req.body;
 
   // Si los valores vienen vacíos o undefined, se mandan como null para que el SP los aleatorice

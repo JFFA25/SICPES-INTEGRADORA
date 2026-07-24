@@ -81,7 +81,11 @@ Para robustecer la automatización de procesos, garantizar la seguridad en el ac
 
 ### Paleta de Colores
 <p align="center">
-  <img src="/frontend/src/assets/images/colors_scipes.png" alt="Colores" width="600"/>
+  <img src="/frontend/src/assets/images/colors_sicpes.png" alt="Colores" width="600"/>
+</p>
+
+<p align="center">
+  <img src="/frontend/src/assets/images/colors_admin.png" alt="Colores" width="600"/>
 </p>
 
 ## Gestión del Proyecto

@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import icon from "../assets/images/icon.png";
+import { useNavigate } from "react-router-dom";
+import UserNavbar from "../components/UserNavbar";
+import Alert from "../components/Alert";
+import { useTimedMessage } from "../hooks/useTimedMessage";
 
 const Payments = () => {
     const navigate = useNavigate();
+    const { message, showError, clear } = useTimedMessage();
 
     const [user, setUser] = useState<any>(null);
     const [reservation, setReservation] = useState<any>(null);
@@ -90,7 +93,7 @@ const Payments = () => {
                     }
                 }
             } catch {
-                console.log("Error al cargar datos");
+                showError("No se pudieron cargar tus datos de pago. Intenta recargar la página.");
             }
         };
 
@@ -151,18 +154,12 @@ const Payments = () => {
             } else {
                 const errorData = await res.json().catch(() => ({ error: "Error desconocido" }));
                 console.error("Solicitud de pago fallida:", errorData);
+                showError(errorData.error || "No se pudo registrar tu solicitud de pago. Intenta de nuevo.");
             }
         } catch(e) {
             console.error(e);
+            showError("Error de conexión al solicitar el pago. Intenta de nuevo.");
         }
-    };
-
-    const handleLogout = async () => {
-        await fetch(`/api/logout`, {
-            method: "POST",
-            credentials: "include",
-        });
-        navigate("/login");
     };
 
     const isProratedPaymentRecord = (payment: any) => {
@@ -184,24 +181,15 @@ const Payments = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col animate-page-transition">
-            <nav className="bg-green-600 text-white px-8 py-4 flex justify-between items-center shadow-md z-10">
-                <Link to="/dashboard" className="flex items-center gap-3 font-bold text-lg tracking-wide">
-                    <img src={icon} alt="logo" className="w-8 drop-shadow-sm" />
-                    SICPES
-                </Link>
-
-                <div className="flex gap-8 items-center text-sm font-medium">
-                    <Link to="/dashboard" className="hover:text-green-200 transition">Inicio</Link>
-                    <Link to="/reservation" className="hover:text-green-200 transition">Peticiones</Link>
-                    <Link to="/payments" className="text-green-100 border-b-2 border-white pb-1">Pagos</Link>
-
-                    <button onClick={handleLogout} className="bg-gray-900 border border-gray-800 text-white px-5 py-2 rounded-xl hover:bg-gray-800 transition shadow-sm ml-2">
-                        Cerrar sesión
-                    </button>
-                </div>
-            </nav>
+            <UserNavbar active="payments" />
 
             <main className="flex-1 w-full max-w-5xl mx-auto px-6 py-8">
+                {message && (
+                    <div className="mb-6">
+                        <Alert type={message.type} onClose={clear}>{message.text}</Alert>
+                    </div>
+                )}
+
                 <div className="text-center mb-10">
                     <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Gestión de Pagos</h1>
                     <p className="text-slate-500 mt-2 text-sm max-w-xl mx-auto">

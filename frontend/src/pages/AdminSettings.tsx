@@ -1,6 +1,10 @@
-﻿import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import icon from "../assets/images/icon.ico";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import AdminNavbar from "../components/admin/AdminNavbar";
+import StatCard from "../components/admin/StatCard";
+import Alert from "../components/Alert";
+import ConfirmModal from "../components/ConfirmModal";
+import { useTimedMessage } from "../hooks/useTimedMessage";
 
 const AdminSettings = () => {
   const navigate = useNavigate();
@@ -10,12 +14,16 @@ const AdminSettings = () => {
     emailAdmin: "admin@sicpes.com"
   });
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const { message: settingsMessage, showError: showSettingsError, showSuccess: showSettingsSuccess, clear: clearSettingsMessage } = useTimedMessage();
+
   const [rooms, setRooms] = useState<any[]>([]);
   const [newFloor, setNewFloor] = useState("");
   const [newRooms, setNewRooms] = useState("");
   const [roomsLoading, setRoomsLoading] = useState(false);
-  const [roomsMessage, setRoomsMessage] = useState("");
+  const { message: roomsMessage, showError: showRoomsError, showSuccess: showRoomsSuccess, clear: clearRoomsMessage } = useTimedMessage();
+
+  // Modal de confirmación para eliminar un piso (reemplaza window.confirm)
+  const [deletingFloor, setDeletingFloor] = useState<string | null>(null);
 
   const fetchSettings = async () => {
     try {
@@ -31,14 +39,9 @@ const AdminSettings = () => {
       const data = await res.json();
       setSettings(data);
     } catch {
-      setMessage("No se pudieron cargar las configuraciones");
+      showSettingsError("No se pudieron cargar las configuraciones");
     }
   };
-
-  useEffect(() => {
-    fetchSettings();
-    fetchRooms();
-  }, []);
 
   const fetchRooms = async () => {
     try {
@@ -53,18 +56,23 @@ const AdminSettings = () => {
       const data = await res.json();
       setRooms(data.lista || []);
     } catch {
-      setRoomsMessage("No se pudieron cargar los pisos y habitaciones");
+      showRoomsError("No se pudieron cargar los pisos y habitaciones");
     }
   };
 
+  useEffect(() => {
+    fetchSettings();
+    fetchRooms();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleAddRooms = async () => {
     if (!newFloor || !newRooms.trim()) {
-      setRoomsMessage("Debes indicar piso y habitaciones");
+      showRoomsError("Debes indicar piso y habitaciones");
       return;
     }
 
     setRoomsLoading(true);
-    setRoomsMessage("");
 
     try {
       const res = await fetch(`/api/rooms`, {
@@ -76,26 +84,23 @@ const AdminSettings = () => {
 
       const data = await res.json();
       if (!res.ok) {
-        setRoomsMessage(data.error || "Error al agregar habitaciones");
+        showRoomsError(data.error || "Error al agregar habitaciones");
         setRoomsLoading(false);
         return;
       }
 
-      setRoomsMessage(data.message || "Piso y habitaciones agregados");
+      showRoomsSuccess(data.message || "Piso y habitaciones agregados");
       setNewFloor("");
       setNewRooms("");
       fetchRooms();
     } catch {
-      setRoomsMessage("Error al agregar habitaciones");
+      showRoomsError("Error al agregar habitaciones");
     }
 
     setRoomsLoading(false);
   };
 
   const handleDeleteFloor = async (piso: string) => {
-    const confirmed = window.confirm(`¿Eliminar el piso ${piso} y todas sus habitaciones?`);
-    if (!confirmed) return;
-
     try {
       const res = await fetch(`/api/rooms/${encodeURIComponent(piso)}`, {
         method: "DELETE",
@@ -104,20 +109,19 @@ const AdminSettings = () => {
 
       const data = await res.json();
       if (!res.ok) {
-        setRoomsMessage(data.error || "Error al eliminar piso");
+        showRoomsError(data.error || "Error al eliminar piso");
         return;
       }
 
-      setRoomsMessage(data.message || "Piso eliminado");
+      showRoomsSuccess(data.message || "Piso eliminado");
       fetchRooms();
     } catch {
-      setRoomsMessage("Error al eliminar piso");
+      showRoomsError("Error al eliminar piso");
     }
   };
 
   const handleSave = async () => {
     setLoading(true);
-    setMessage("");
 
     try {
       const res = await fetch(`/api/admin/settings`, {
@@ -128,15 +132,14 @@ const AdminSettings = () => {
       });
 
       if (!res.ok) {
-        setMessage("No se pudieron guardar las configuraciones");
+        showSettingsError("No se pudieron guardar las configuraciones");
         setLoading(false);
         return;
       }
 
-      setMessage("Configuraciones guardadas exitosamente");
-      setTimeout(() => setMessage(""), 3000);
+      showSettingsSuccess("Configuraciones guardadas exitosamente");
     } catch {
-      setMessage("Error al guardar configuraciones");
+      showSettingsError("Error al guardar configuraciones");
     }
 
     setLoading(false);
@@ -144,37 +147,7 @@ const AdminSettings = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 animate-page-transition">
-      <nav className="flex items-center justify-between px-8 py-3 bg-white border-b border-gray-200 shadow-sm">
-        <div className="flex items-center gap-3">
-          <img src={icon} alt="SICPES" className="w-10 h-10 object-contain" />
-          <span className="text-2xl font-bold text-blue-700 tracking-tight">SICPES</span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Link to="/admin/reservations" className="flex items-center gap-2 px-5 py-2.5 text-gray-500 font-semibold rounded-xl text-sm hover:bg-gray-50 transition">
-            Reservaciones
-          </Link>
-          <Link to="/admin/payments" className="flex items-center gap-2 px-5 py-2.5 text-gray-500 font-semibold rounded-xl text-sm hover:bg-gray-50 transition">
-            Pagos
-          </Link>
-          <Link to="/admin/settings" className="flex items-center gap-2 px-5 py-2.5 bg-blue-50 text-blue-700 font-semibold rounded-xl text-sm transition">
-            Configuración
-          </Link>
-        </div>
-
-        <button
-          className="flex items-center gap-2 px-5 py-2 border border-pink-200 text-pink-500 font-semibold rounded-xl text-sm hover:bg-pink-50 transition"
-          onClick={async () => {
-            await fetch(`/api/logout`, {
-              method: "POST",
-              credentials: "include",
-            });
-            navigate("/login");
-          }}
-        >
-          Cerrar sesión
-        </button>
-      </nav>
+      <AdminNavbar active="settings" />
 
       <main className="px-8 py-10 max-w-[1400px] mx-auto w-full">
         <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -185,25 +158,16 @@ const AdminSettings = () => {
           </div>
         </div>
 
-        {message && (
-          <div className={`mb-6 p-4 rounded-2xl ${message.includes("Error") ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}`}>
-            {message}
+        {settingsMessage && (
+          <div className="mb-6">
+            <Alert type={settingsMessage.type} onClose={clearSettingsMessage}>{settingsMessage.text}</Alert>
           </div>
         )}
 
         <div className="grid gap-6 md:grid-cols-3 mb-8">
-          <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition-transform hover:-translate-y-1">
-            <p className="text-sm text-slate-500">Precio individual</p>
-            <p className="mt-3 text-3xl font-semibold text-slate-900">${settings.precioIndividual.toLocaleString("es-MX")}</p>
-          </div>
-          <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition-transform hover:-translate-y-1">
-            <p className="text-sm text-slate-500">Precio compartida</p>
-            <p className="mt-3 text-3xl font-semibold text-slate-900">${settings.precioCompartida.toLocaleString("es-MX")}</p>
-          </div>
-          <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition-transform hover:-translate-y-1">
-            <p className="text-sm text-slate-500">Email de contacto</p>
-            <p className="mt-3 text-xl font-semibold text-slate-900">{settings.emailAdmin}</p>
-          </div>
+          <StatCard label="Precio individual" value={`$${settings.precioIndividual.toLocaleString("es-MX")}`} />
+          <StatCard label="Precio compartida" value={`$${settings.precioCompartida.toLocaleString("es-MX")}`} />
+          <StatCard label="Email de contacto" value={settings.emailAdmin} />
         </div>
 
         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8">
@@ -254,13 +218,13 @@ const AdminSettings = () => {
             <div>
               <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Pisos y habitaciones</p>
               <h2 className="mt-3 text-2xl font-bold text-slate-900">Agregar nuevos pisos y habitaciones</h2>
-              <p className="mt-2 text-sm text-slate-600 max-w-2xl">Los datos se guardan en la tabla <span className="font-semibold">tbd_habitaciones</span>.</p>
+              <p className="mt-2 text-sm text-slate-600 max-w-2xl">Los datos se guardan en la tabla <span className="font-semibold">tbi_habitaciones</span>.</p>
             </div>
           </div>
 
           {roomsMessage && (
-            <div className={`mb-6 p-4 rounded-2xl ${roomsMessage.toLowerCase().includes("error") ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}`}>
-              {roomsMessage}
+            <div className="mb-6">
+              <Alert type={roomsMessage.type} onClose={clearRoomsMessage}>{roomsMessage.text}</Alert>
             </div>
           )}
 
@@ -317,7 +281,7 @@ const AdminSettings = () => {
                         <td className="px-4 py-4 text-sm text-slate-700">{row.habitaciones}</td>
                         <td className="px-4 py-4 text-sm text-slate-700">
                           <button
-                            onClick={() => handleDeleteFloor(row.piso)}
+                            onClick={() => setDeletingFloor(row.piso)}
                             className="text-xs bg-white border border-red-200 text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-full font-semibold transition"
                           >
                             Eliminar piso
@@ -338,6 +302,20 @@ const AdminSettings = () => {
           </div>
         </section>
       </main>
+
+      <ConfirmModal
+        open={deletingFloor !== null}
+        title="Eliminar piso"
+        description={deletingFloor ? `¿Eliminar el piso ${deletingFloor} y todas sus habitaciones? Esta acción no se puede deshacer.` : undefined}
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        tone="danger"
+        onConfirm={() => {
+          if (deletingFloor) handleDeleteFloor(deletingFloor);
+          setDeletingFloor(null);
+        }}
+        onCancel={() => setDeletingFloor(null)}
+      />
     </div>
   );
 };
