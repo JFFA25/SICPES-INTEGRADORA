@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { MapPin, Zap } from "lucide-react";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 import Breadcrumbs from "../components/Breadcrumbs";
+import Alert from "../components/Alert";
+import { useTimedMessage } from "../hooks/useTimedMessage";
 
 const Contact = () => {
     // Coordenadas fijas de la Pensión (UT Xicotepec de Juárez)
@@ -11,6 +15,7 @@ const Contact = () => {
     const [distance, setDistance] = useState<string | null>(null);
     const [duration, setDuration] = useState<string | null>(null);
     const [loadingRoute, setLoadingRoute] = useState(false);
+    const { message, showError, clear } = useTimedMessage();
 
     useEffect(() => {
         document.title = "Contacto";
@@ -19,7 +24,7 @@ const Contact = () => {
     // FUNCIÓN DEL WEB SERVICE CORREGIDA MATEMÁTICAMENTE
     const calcularDistanciaAPension = () => {
         if (!navigator.geolocation) {
-            alert("Tu navegador no soporta geolocalización.");
+            showError("Tu navegador no soporta geolocalización.");
             return;
         }
 
@@ -38,15 +43,15 @@ const Contact = () => {
 
                 if (data.routes && data.routes.length > 0) {
                     const ruta = data.routes[0];
-                    
+
                     // 1. Distancia exacta que devuelve el Web Service en kilómetros
                     const kilometrosNum = ruta.distance / 1000;
                     const kms = kilometrosNum.toFixed(2);
-                    
+
                     // 2. CÁLCULO DE SEGURIDAD: 1 km a pie = ~12.5 minutos.
                     // Multiplicamos los km reales por 12.5 para sacar los minutos reales de caminata.
                     const totalMinutos = Math.round(kilometrosNum * 12.5);
-                    
+
                     // 3. Formateo en horas y minutos si el trayecto es largo
                     let tiempoFormateado = "";
                     if (totalMinutos >= 60) {
@@ -60,39 +65,23 @@ const Contact = () => {
                     setDistance(`${kms} km`);
                     setDuration(tiempoFormateado);
                 } else {
-                    alert("No se encontró una ruta factible a pie.");
+                    showError("No se encontró una ruta factible a pie.");
                 }
             } catch (error) {
                 console.error("Error en el Web Service de mapas:", error);
+                showError("No se pudo calcular la ruta. Intenta de nuevo más tarde.");
             } finally {
                 setLoadingRoute(false);
             }
-        }, (error) => {
-            alert("Por favor acepta los permisos de ubicación para calcular tu ruta.");
+        }, () => {
+            showError("Por favor acepta los permisos de ubicación para calcular tu ruta.");
             setLoadingRoute(false);
         });
     };
 
     return (
         <div className="min-h-screen bg-gray-100 animate-page-transition">
-
-            {/* NAVBAR */}
-            <div className="flex justify-between items-center px-10 py-4 bg-gray-100 shadow-sm">
-                <Link to="/" className="text-xl font-bold text-green-700">
-                    SICPES
-                </Link>
-
-                <div className="flex gap-6 items-center">
-                    <Link to="/">Inicio</Link>
-                    <Link to="/contact">Contacto</Link>
-                    <Link to="/register">Regístrate</Link>
-                    <Link to="/login">
-                        <button className="border border-green-700 px-4 py-1 rounded hover:bg-green-700 hover:text-white transition">
-                            Iniciar sesión
-                        </button>
-                    </Link>
-                </div>
-            </div>
+            <Navbar />
 
             {/* BREADCRUMBS */}
             <div className="max-w-7xl mx-auto px-6 md:px-10 mt-4">
@@ -128,19 +117,33 @@ const Contact = () => {
                         <h3 className="text-lg font-bold text-green-700">
                             ¿Dónde estamos?
                         </h3>
-                        <button 
+                        <button
                             onClick={calcularDistanciaAPension}
-                            className="bg-green-700 text-white text-xs px-3 py-1.5 rounded-md hover:bg-green-800 transition shadow"
+                            className="flex items-center gap-1.5 bg-green-700 text-white text-xs px-3 py-1.5 rounded-md hover:bg-green-800 transition shadow"
                             disabled={loadingRoute}
                         >
-                            {loadingRoute ? "Calculando..." : "⚡ ¿Qué tan lejos estoy?"}
+                            {loadingRoute ? (
+                                "Calculando..."
+                            ) : (
+                                <>
+                                    <Zap className="w-3.5 h-3.5" strokeWidth={2.25} />
+                                    ¿Qué tan lejos estoy?
+                                </>
+                            )}
                         </button>
                     </div>
 
-                    {/* Alerta dinámica con la respuesta del Web Service */}
+                    {message && (
+                        <div className="mb-3">
+                            <Alert type={message.type} onClose={clear}>{message.text}</Alert>
+                        </div>
+                    )}
+
+                    {/* Resultado dinámico de la respuesta del Web Service */}
                     {distance && duration && (
-                        <div className="bg-green-50 border border-green-200 p-3 rounded-lg mb-3 text-sm text-green-800">
-                            📍 Te encuentras a <strong>{distance}</strong> de la pensión (Aprox. <strong>{duration} caminando</strong>).
+                        <div className="flex items-start gap-2 bg-green-50 border border-green-200 p-3 rounded-lg mb-3 text-sm text-green-800">
+                            <MapPin className="w-4 h-4 mt-0.5 shrink-0" strokeWidth={2.25} />
+                            <span>Te encuentras a <strong>{distance}</strong> de la pensión (Aprox. <strong>{duration} caminando</strong>).</span>
                         </div>
                     )}
 
@@ -177,6 +180,8 @@ const Contact = () => {
                 </div>
 
             </div>
+
+            <Footer />
         </div>
     );
 };

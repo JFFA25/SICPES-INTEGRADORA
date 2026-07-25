@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const session = require("express-session");
+const helmet = require("helmet");
 
 // 1. IMPORTAR MÓDULOS NATIVOS PARA HTTPS
 const https = require("https");
@@ -12,6 +13,13 @@ const app = express();
 
 // CONEXIÓN BD
 require("./src/database/db");
+
+// SEGURIDAD - Cabeceras HTTP recomendadas (CSP desactivado para no romper el frontend en dev)
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+  })
+);
 
 // CORS - Actualizado a HTTPS para coincidir con tu nuevo frontend de Vite
 app.use(
@@ -35,7 +43,7 @@ app.use(
       secure: true, // <-- CAMBIADO A TRUE: Las cookies ahora requieren HTTPS obligatoriamente
       httpOnly: true,
       sameSite: "none", // <-- CAMBIADO A NONE: Permite enviar la cookie de sesión entre diferentes puertos locales de forma segura
-      maxAge: 5 * 60 * 1000, // 5 minutos exactos de inactividad
+      maxAge: 30 * 60 * 1000, // 30 minutos de inactividad
     },
   })
 );

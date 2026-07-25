@@ -1,21 +1,39 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import icon from "../assets/images/icon.png";
+import { useNavigate } from "react-router-dom";
+import { ChevronDown, LoaderCircle } from "lucide-react";
+import UserNavbar from "../components/UserNavbar";
 import individualImg from "../assets/images/individual.png";
 import compartidaImg from "../assets/images/compartido.png";
 import DatePicker, { registerLocale } from "react-datepicker";
 
 import { es } from "date-fns/locale/es";
 import "react-datepicker/dist/react-datepicker.css";
+import Alert from "../components/Alert";
+import { useTimedMessage } from "../hooks/useTimedMessage";
 
 registerLocale("es", es);
 
-const CustomDropdown = ({ options, value, onChange, placeholder, disabled }: any) => {
+interface DropdownOption {
+  value: string;
+  label: string;
+  disabled?: boolean;
+}
+
+interface CustomDropdownProps {
+  options: DropdownOption[];
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  disabled?: boolean;
+  label: string;
+}
+
+const CustomDropdown = ({ options, value, onChange, placeholder, disabled, label }: CustomDropdownProps) => {
   const [open, setOpen] = useState(false);
-  
+
   useEffect(() => {
     const handleClickOutside = () => setOpen(false);
-    if(open) {
+    if (open) {
       setTimeout(() => document.addEventListener('click', handleClickOutside), 10);
     }
     return () => document.removeEventListener('click', handleClickOutside);
@@ -24,8 +42,19 @@ const CustomDropdown = ({ options, value, onChange, placeholder, disabled }: any
   return (
     <div className="relative w-full">
       <div
+        role="button"
+        tabIndex={disabled ? -1 : 0}
+        aria-label={label}
+        aria-haspopup="listbox"
+        aria-expanded={open}
         onClick={() => {
           if (!disabled) {
+            setOpen(!open);
+          }
+        }}
+        onKeyDown={(e) => {
+          if (!disabled && (e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
             setOpen(!open);
           }
         }}
@@ -34,24 +63,25 @@ const CustomDropdown = ({ options, value, onChange, placeholder, disabled }: any
         } ${open ? "border-green-500 ring-2 ring-green-500/50" : ""}`}
       >
         <span className={value ? "text-gray-900" : "text-gray-500"}>
-          {value ? options.find((o:any) => o.value === value)?.label : placeholder}
+          {value ? options.find((o) => o.value === value)?.label : placeholder}
         </span>
-        <svg className={`w-5 h-5 text-gray-400 transition-transform ${open ? "rotate-180 text-green-500" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-        </svg>
+        <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${open ? "rotate-180 text-green-500" : ""}`} strokeWidth={2} />
       </div>
 
       {open && (
-        <div className="absolute z-50 w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden animate-page-transition max-h-60 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+        <div role="listbox" className="absolute z-50 w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden animate-page-transition max-h-60 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
           {options.length === 0 ? (
             <div className="px-4 py-3 text-sm text-gray-500">No hay opciones</div>
           ) : (
-            options.map((o: any) => (
+            options.map((o) => (
               <div
                 key={o.value}
+                role="option"
+                aria-selected={value === o.value}
                 onClick={() => {
                   if (!o.disabled) {
                     onChange(o.value);
+                    setOpen(false);
                   }
                 }}
                 className={`px-4 py-3 text-sm transition ${
@@ -87,12 +117,12 @@ const Reservation = () => {
   });
 
   const [tipo, setTipo] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [hasReservation, setHasReservation] = useState(false);
   const [prices, setPrices] = useState({ individual: 2000, compartida: 1200 });
   const [occupiedRooms, setOccupiedRooms] = useState<string[]>([]);
-  const [habitacionesPorPiso, setHabitacionesPorPiso] = useState<any>({});
+  const [habitacionesPorPiso, setHabitacionesPorPiso] = useState<Record<string, string[]>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { message, showError, showSuccess, clear } = useTimedMessage();
 
   // CARGAR HABITACIONES DESDE API
   useEffect(() => {
@@ -102,16 +132,16 @@ const Reservation = () => {
         if (res.ok) {
           const data = await res.json();
           const rows = Array.isArray(data) ? data : data.lista || [];
-          const formatted: any = {};
-          rows.forEach((row: any) => {
+          const formatted: Record<string, string[]> = {};
+          rows.forEach((row: { piso: string; habitaciones: string }) => {
             formatted[row.piso] = row.habitaciones.split(', ');
           });
           setHabitacionesPorPiso(data.agrupado || formatted);
         } else {
           console.error("Error cargando habitaciones: respuesta inválida", res.status);
         }
-      } catch (error) {
-        console.error("Error cargando habitaciones:", error);
+      } catch (err) {
+        console.error("Error cargando habitaciones:", err);
       }
     };
 
@@ -125,8 +155,8 @@ const Reservation = () => {
             compartida: data.precioCompartida || 1200,
           });
         }
-      } catch (error) {
-        console.error("Error cargando precios de configuración:", error);
+      } catch (err) {
+        console.error("Error cargando precios de configuración:", err);
       }
     };
 
@@ -153,11 +183,11 @@ const Reservation = () => {
         const data = await res.json();
 
         if (data && !["finalizada", "cancelada", "rechazada"].includes(data.estado)) {
-           setHasReservation(true);
+          setHasReservation(true);
         }
 
-      } catch {
-        console.log("Error al verificar reservación");
+      } catch (err) {
+        console.error("Error al verificar reservación:", err);
       }
     };
 
@@ -176,11 +206,10 @@ const Reservation = () => {
 
         const data = await res.json();
 
-      
         setOccupiedRooms(data || []);
 
-      } catch {
-        console.log("Error al cargar habitaciones ocupadas");
+      } catch (err) {
+        console.error("Error al cargar habitaciones ocupadas:", err);
       }
     };
 
@@ -190,28 +219,31 @@ const Reservation = () => {
   // VALIDACIÓN EXTRA
   useEffect(() => {
     if (form.habitacion && occupiedRooms.includes(form.habitacion)) {
-      setError("Esta habitación ya está ocupada. Elige otra.");
+      showError("Esta habitación ya está ocupada. Elige otra.");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.habitacion, occupiedRooms]);
 
-  // 🚀 SUBMIT
-  const handleSubmit = async (e: any) => {
+  // SUBMIT
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (hasReservation) {
-      setError("Ya tienes una reservación registrada");
+      showError("Ya tienes una reservación registrada");
       return;
     }
 
     if (!form.fecha_ingreso || !tipo || !form.piso || !form.habitacion) {
-      setError("Todos los campos son obligatorios");
+      showError("Todos los campos son obligatorios");
       return;
     }
 
     if (occupiedRooms.includes(form.habitacion)) {
-      setError("Esta habitación ya está ocupada. Elige otra.");
+      showError("Esta habitación ya está ocupada. Elige otra.");
       return;
     }
+
+    setIsSubmitting(true);
 
     try {
       const res = await fetch(`/api/reservation`, {
@@ -230,11 +262,12 @@ const Reservation = () => {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error);
+        showError(data.error || "No se pudo registrar la reservación.");
+        setIsSubmitting(false);
         return;
       }
 
-      setSuccess("Reservación enviada correctamente 🎉");
+      showSuccess("Reservación enviada correctamente.");
       setHasReservation(true);
 
       setTimeout(() => {
@@ -242,44 +275,21 @@ const Reservation = () => {
       }, 1500);
 
     } catch {
-      setError("Error al conectar con el servidor");
+      showError("Error al conectar con el servidor");
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col animate-page-transition">
+    <div className="min-h-screen bg-gray-50 flex flex-col animate-page-transition transition-colors">
 
       {/* NAVBAR */}
-      <nav className="bg-green-600 text-white px-8 py-4 flex justify-between items-center shadow-md z-10">
-        <Link to="/dashboard" className="flex items-center gap-3 font-bold text-lg tracking-wide">
-          <img src={icon} alt="logo" className="w-8 drop-shadow-sm" />
-          SICPES
-        </Link>
-
-        <div className="flex gap-8 items-center text-sm font-medium">
-          <Link to="/dashboard" className="hover:text-green-200 transition">Inicio</Link>
-          <Link to="/reservation" className="text-green-100 border-b-2 border-white pb-1">Peticiones</Link>
-          <Link to="/payments" className="hover:text-green-200 transition">Pagos</Link>
-
-          <button
-            className="bg-gray-900 border border-gray-800 text-white px-5 py-2 rounded-xl hover:bg-gray-800 transition shadow-sm ml-2"
-            onClick={async () => {
-              await fetch(`/api/logout`, {
-                method: "POST",
-                credentials: "include",
-              });
-              navigate("/login");
-            }}
-          >
-            Cerrar sesión
-          </button>
-        </div>
-      </nav>
+      <UserNavbar active="reservation" />
 
       {/* CONTENIDO */}
       <div className="flex flex-col items-center px-4 py-8 max-w-5xl mx-auto w-full">
-        
-        <div className="bg-white w-full max-w-2xl p-6 md:p-8 rounded-2xl shadow-xl shadow-green-100/50 border border-green-50">
+
+        <div className="bg-white w-full max-w-2xl p-6 md:p-8 rounded-2xl shadow-xl shadow-green-100/50 border border-green-50 transition-colors">
 
           <h1 className="text-2xl md:text-3xl font-bold text-center text-gray-800 mb-2">
             Registro de Estudiantes
@@ -291,18 +301,19 @@ const Reservation = () => {
 
           {/* YA TIENE RESERVACIÓN */}
           {hasReservation && (
-            <div className="bg-red-50 text-red-600 text-sm font-semibold p-3 rounded-xl text-center mb-5 border border-red-100">
-              Ya tienes una reservación registrada
+            <div className="mb-5">
+              <Alert type="info">Ya tienes una reservación registrada.</Alert>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
 
             {/* FECHA Y MONTO */}
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-semibold text-gray-700 block mb-1.5">Fecha de ingreso *</label>
+                <label htmlFor="reservation-fecha" className="text-sm font-semibold text-gray-700 block mb-1.5">Fecha de ingreso *</label>
                 <DatePicker
+                  id="reservation-fecha"
                   selected={form.fecha_ingreso ? new Date(form.fecha_ingreso + "T12:00:00") : null}
                   onChange={(date: Date | null) => {
                     if (date) {
@@ -323,8 +334,9 @@ const Reservation = () => {
               </div>
 
               <div>
-                <label className="text-sm font-semibold text-gray-700 block mb-1.5">Monto a pagar</label>
+                <label htmlFor="reservation-monto" className="text-sm font-semibold text-gray-700 block mb-1.5">Monto a pagar</label>
                 <input
+                  id="reservation-monto"
                   value={monto ? `$${monto} MXN` : "Selecciona un tipo"}
                   readOnly
                   className="w-full px-4 py-3 border border-gray-200 rounded-2xl bg-gray-100 text-gray-700 font-semibold focus:outline-none"
@@ -334,26 +346,44 @@ const Reservation = () => {
 
             {/* TIPO */}
             <div>
-              <label className="text-sm font-semibold text-gray-700 block mb-2">Tipo de Habitación *</label>
+              <span className="text-sm font-semibold text-gray-700 block mb-2">Tipo de Habitación *</span>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Tipo de habitación">
 
                 <div
+                  role="radio"
+                  aria-checked={tipo === "individual"}
+                  tabIndex={hasReservation ? -1 : 0}
                   onClick={() => !hasReservation && setTipo("individual")}
+                  onKeyDown={(e) => {
+                    if (!hasReservation && (e.key === "Enter" || e.key === " ")) {
+                      e.preventDefault();
+                      setTipo("individual");
+                    }
+                  }}
                   className={`border-2 p-3 rounded-2xl cursor-pointer text-center transition-all ${tipo === "individual" ? "border-green-500 bg-green-50/50 shadow-sm" : "border-gray-100 hover:border-gray-200"
                     } ${hasReservation && "opacity-50 cursor-not-allowed"}`}
                 >
-                  <img src={individualImg} className="w-12 mx-auto mb-1.5 opacity-80" />
+                  <img src={individualImg} alt="" className="w-12 mx-auto mb-1.5 opacity-80" />
                   <p className="font-bold text-gray-800 text-sm">Individual</p>
                   <p className="text-xs text-gray-500">Solo para ti</p>
                 </div>
 
                 <div
+                  role="radio"
+                  aria-checked={tipo === "compartida"}
+                  tabIndex={hasReservation ? -1 : 0}
                   onClick={() => !hasReservation && setTipo("compartida")}
+                  onKeyDown={(e) => {
+                    if (!hasReservation && (e.key === "Enter" || e.key === " ")) {
+                      e.preventDefault();
+                      setTipo("compartida");
+                    }
+                  }}
                   className={`border-2 p-3 rounded-2xl cursor-pointer text-center transition-all ${tipo === "compartida" ? "border-green-500 bg-green-50/50 shadow-sm" : "border-gray-100 hover:border-gray-200"
                     } ${hasReservation && "opacity-50 cursor-not-allowed"}`}
                 >
-                  <img src={compartidaImg} className="w-12 mx-auto mb-1.5 opacity-80" />
+                  <img src={compartidaImg} alt="" className="w-12 mx-auto mb-1.5 opacity-80" />
                   <p className="font-bold text-gray-800 text-sm">Compartida</p>
                   <p className="text-xs text-gray-500">2-6 estudiantes</p>
                 </div>
@@ -366,13 +396,14 @@ const Reservation = () => {
 
               {/* PISO */}
               <div className="relative">
-                <CustomDropdown 
+                <CustomDropdown
+                  label="Piso"
                   options={Object.keys(habitacionesPorPiso).sort().map((pisoNum) => ({
                     value: pisoNum,
                     label: `Piso ${pisoNum}`,
                   }))}
                   value={form.piso}
-                  onChange={(val: string) => {
+                  onChange={(val) => {
                     setForm({ ...form, piso: val, habitacion: "" });
                   }}
                   placeholder="Selecciona un piso"
@@ -382,23 +413,24 @@ const Reservation = () => {
 
               {/* HABITACIÓN */}
               <div className="relative">
-                <CustomDropdown 
+                <CustomDropdown
+                  label="Habitación"
                   options={
                     form.piso
-                      ? (habitacionesPorPiso[form.piso] || []).map((hab: string) => {
-                          const isOccupied = occupiedRooms
-                            .map((r: any) => String(r))
-                            .includes(String(hab));
-                          return {
-                            value: hab,
-                            label: isOccupied ? `Habitación ${hab} (Ocupada)` : `Habitación ${hab}`,
-                            disabled: isOccupied
-                          };
-                        })
+                      ? (habitacionesPorPiso[form.piso] || []).map((hab) => {
+                        const isOccupied = occupiedRooms
+                          .map((r) => String(r))
+                          .includes(String(hab));
+                        return {
+                          value: hab,
+                          label: isOccupied ? `Habitación ${hab} (Ocupada)` : `Habitación ${hab}`,
+                          disabled: isOccupied
+                        };
+                      })
                       : []
                   }
                   value={form.habitacion}
-                  onChange={(val: string) => {
+                  onChange={(val) => {
                     setForm({ ...form, habitacion: val });
                   }}
                   placeholder={form.piso ? "Selecciona una habitación" : "Primero selecciona un piso"}
@@ -415,33 +447,26 @@ const Reservation = () => {
               </p>
             )}
 
-            {/* 🔴 MENSAJE ESPECÍFICO */}
-            {form.habitacion && occupiedRooms.includes(form.habitacion) && (
-              <p className="text-red-500 text-xs mt-1">
-                Esta habitación ya está ocupada. Selecciona otra.
-              </p>
-            )}
-
-
-
             {/* MENSAJES */}
-            {error && (
-              <p className="text-red-500 text-sm text-center bg-red-50 p-2 rounded-lg border border-red-100">{error}</p>
-            )}
-
-            {success && (
-              <p className="text-green-700 text-sm font-semibold text-center bg-green-50 p-2 rounded-lg border border-green-100">{success}</p>
-            )}
+            {message && <Alert type={message.type} onClose={clear}>{message.text}</Alert>}
 
             {/* BOTÓN */}
             <button
-              disabled={hasReservation}
-              className={`w-full py-3.5 rounded-2xl font-bold text-white transition-all shadow-md focus:ring-4 focus:ring-green-500/30 ${hasReservation
+              type="submit"
+              disabled={hasReservation || isSubmitting}
+              className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-white transition-all shadow-md focus:ring-4 focus:ring-green-500/30 ${hasReservation || isSubmitting
                 ? "bg-gray-400 cursor-not-allowed shadow-none"
                 : "bg-green-600 hover:bg-green-700 hover:-translate-y-0.5"
                 }`}
             >
-              Confirmar Reservación
+              {isSubmitting ? (
+                <>
+                  <LoaderCircle className="w-5 h-5 animate-spin" strokeWidth={2.25} />
+                  Enviando...
+                </>
+              ) : (
+                "Confirmar Reservación"
+              )}
             </button>
 
           </form>
@@ -451,4 +476,4 @@ const Reservation = () => {
   );
 };
 
-export default Reservation; 
+export default Reservation;

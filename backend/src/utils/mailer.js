@@ -11,8 +11,9 @@ const transporter = nodemailer.createTransport({
 });
 
 // FUNCIÓN DE ENVÍO
-const sendConfirmationEmail = async (email, token) => {
-  const verificationUrl = `http://localhost:3000/api/confirm/${token}`;
+const sendConfirmationEmail = async (email, token, nombre = "") => {
+  const verificationUrl = `https://localhost:3000/api/confirm/${token}`;
+  const saludo = nombre ? `Hola, ${nombre}` : "Hola";
 
   await transporter.sendMail({
     from: `"SICPES" <${process.env.MAIL_FROM}>`,
@@ -31,7 +32,7 @@ const sendConfirmationEmail = async (email, token) => {
       <div style="padding: 30px; color: #333;">
         
         <p style="font-size: 16px;">
-          Hola,
+          ${saludo},
         </p>
 
         <p style="font-size: 15px; line-height: 1.6;">
@@ -73,8 +74,9 @@ const sendConfirmationEmail = async (email, token) => {
   });
 };
 
-const sendForgotPasswordEmail = async (email, token) => {
-  const resetUrl = `http://localhost:5173/reset-password/${token}`;
+const sendForgotPasswordEmail = async (email, token, nombre = "") => {
+  const resetUrl = `https://localhost:5173/reset-password/${token}`;
+  const saludo = nombre ? `Hola, ${nombre}` : "Hola";
 
   await transporter.sendMail({
     from: `"SICPES" <${process.env.MAIL_FROM}>`,
@@ -87,7 +89,7 @@ const sendForgotPasswordEmail = async (email, token) => {
         <p style="margin: 5px 0 0 0;">Recuperación de contraseña</p>
       </div>
       <div style="padding: 30px; color: #333;">
-        <p style="font-size: 16px;">Hola,</p>
+        <p style="font-size: 16px;">${saludo},</p>
         <p style="font-size: 15px; line-height: 1.6;">
           Has solicitado restablecer tu contraseña. Haz clic en el botón de abajo para poder actualizar tu cuenta con una nueva contraseña. Si no lo solicitaste, puedes ignorar este mensaje.
         </p>

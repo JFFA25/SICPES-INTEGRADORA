@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { Eye, EyeOff, LoaderCircle } from "lucide-react";
 import icon from "../assets/images/icon.ico";
+import Alert from "../components/Alert";
+import { useTimedMessage } from "../hooks/useTimedMessage";
 
 const ResetPassword = () => {
   const { token } = useParams<{ token: string }>();
@@ -8,14 +11,14 @@ const ResetPassword = () => {
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const { message, showError, clear } = useTimedMessage();
 
   useEffect(() => {
     document.title = "Ajustar Contraseña";
-    
+
     // Verificar si el token es válido
     fetch(`/api/reset-password/${token}`)
       .then(res => {
@@ -29,20 +32,20 @@ const ResetPassword = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!password.trim() || !confirmPassword.trim()) {
-      setError("Llena todos los campos.");
+      showError("Llena todos los campos.");
       return;
     }
     if (password !== confirmPassword) {
-      setError("Las contraseñas no coinciden.");
+      showError("Las contraseñas no coinciden.");
       return;
     }
     if (password.length < 8) {
-        setError("La contraseña debe ser de al menos 8 caracteres.");
-        return;
+      showError("La contraseña debe ser de al menos 8 caracteres.");
+      return;
     }
 
-    setLoading(true);
-    setError("");
+    setIsSubmitting(true);
+    clear();
 
     try {
       const res = await fetch(`/api/reset-password/${token}`, {
@@ -51,21 +54,21 @@ const ResetPassword = () => {
         body: JSON.stringify({ newPassword: password })
       });
       const data = await res.json();
-      if (!res.ok) setError(data.error);
+      if (!res.ok) showError(data.error || "No se pudo restablecer la contraseña.");
       else {
-        setSuccess("Contraseña restablecida con éxito. Redirigiendo al Login...");
+        setSuccessMessage("Contraseña restablecida con éxito. Redirigiendo al Login...");
         setTimeout(() => navigate('/login'), 3000);
       }
     } catch {
-      setError("Error al conectar con el servidor.");
+      showError("Error al conectar con el servidor.");
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-200 animate-page-transition">
-      <div className="bg-white p-10 rounded-xl shadow-md text-center max-w-md w-full">
+    <div className="min-h-screen flex items-center justify-center bg-gray-200 animate-page-transition transition-colors relative">
+      <div className="bg-white p-10 rounded-xl shadow-md text-center max-w-md w-full transition-colors">
         {/* ICONO */}
         <div className="flex justify-center mb-4">
           <Link to="/">
@@ -78,51 +81,69 @@ const ResetPassword = () => {
           Crea una nueva contraseña segura para tu cuenta.
         </p>
 
-        {success ? (
-          <div className="p-4 bg-green-50 text-green-700 font-medium text-sm border border-green-200 rounded-lg text-left">
-            ✅ {success}
+        {successMessage ? (
+          <div className="text-left">
+            <Alert type="success">{successMessage}</Alert>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4 text-left">
+          <form onSubmit={handleSubmit} className="space-y-4 text-left" noValidate>
             <div>
-              <label className="text-green-600 font-medium">Contraseña</label>
+              <label htmlFor="reset-password" className="text-green-600 font-medium">Contraseña</label>
               <div className="relative">
                 <input
+                  id="reset-password"
                   type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
                   value={password}
-                  onChange={(e) => { setPassword(e.target.value); setError(""); }}
+                  onChange={(e) => { setPassword(e.target.value); clear(); }}
                   placeholder="Nueva contraseña"
-                  className={`w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                    error ? "border-red-500 focus:ring-red-400" : "border-green-500 focus:ring-green-400"
+                  aria-invalid={message?.type === "error"}
+                  className={`w-full mt-1 px-4 py-2 pr-11 border rounded-md bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 ${
+                    message?.type === "error" ? "border-red-500 focus:ring-red-400" : "border-green-500 focus:ring-green-400"
                   }`}
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-sm text-gray-600">
-                  {showPassword ? "Ocultar" : "Ver"}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 mt-0.5 text-gray-500 hover:text-gray-700 transition"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" strokeWidth={2} /> : <Eye className="w-5 h-5" strokeWidth={2} />}
                 </button>
               </div>
             </div>
 
             <div>
-              <label className="text-green-600 font-medium">Confirmar Contraseña</label>
+              <label htmlFor="reset-confirm-password" className="text-green-600 font-medium">Confirmar Contraseña</label>
               <input
+                id="reset-confirm-password"
                 type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
                 value={confirmPassword}
-                onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }}
+                onChange={(e) => { setConfirmPassword(e.target.value); clear(); }}
                 placeholder="Repite la contraseña"
-                className={`w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                  error ? "border-red-500 focus:ring-red-400" : "border-green-500 focus:ring-green-400"
+                aria-invalid={message?.type === "error"}
+                className={`w-full mt-1 px-4 py-2 border rounded-md bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 ${
+                  message?.type === "error" ? "border-red-500 focus:ring-red-400" : "border-green-500 focus:ring-green-400"
                 }`}
               />
             </div>
-            
-            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-            
+
+            {message && <Alert type={message.type} onClose={clear}>{message.text}</Alert>}
+
             <button
               type="submit"
-              disabled={loading}
-              className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition mt-2"
+              disabled={isSubmitting}
+              className="w-full flex items-center justify-center gap-2 bg-green-600 text-white py-2 rounded-md hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition mt-2"
             >
-              {loading ? "Guardando..." : "Actualizar contraseña"}
+              {isSubmitting ? (
+                <>
+                  <LoaderCircle className="w-5 h-5 animate-spin" strokeWidth={2.25} />
+                  Guardando...
+                </>
+              ) : (
+                "Actualizar contraseña"
+              )}
             </button>
           </form>
         )}

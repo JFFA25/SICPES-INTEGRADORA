@@ -150,14 +150,14 @@ const confirmUser = (req, res) => {
   db.query(sql, [token], (err, result) => {
     if (err) {
       console.error(err);
-      return res.redirect("http://localhost:5173/error");
+      return res.redirect("https://localhost:5173/error");
     }
 
     if (result.affectedRows === 0) {
-      return res.redirect("http://localhost:5173/error");
+      return res.redirect("https://localhost:5173/error");
     }
 
-    res.redirect("http://localhost:5173/confirmado");
+    res.redirect("https://localhost:5173/confirmado");
   });
 };
 
@@ -209,7 +209,7 @@ const resendConfirmation = (req, res) => {
     db.query("UPDATE tbd_usuarios SET token = ? WHERE email = ?", [token, normalizedEmail], async (err2) => {
       if (err2) return res.status(500).json({ error: "Error generando token" });
 
-      await sendConfirmationEmail(normalizedEmail, token);
+      await sendConfirmationEmail(normalizedEmail, token, results[0].nombre);
       res.json({ message: "Se ha reenviado el correo de confirmación" });
     });
   });
@@ -240,7 +240,7 @@ const forgotPassword = (req, res) => {
       if (err2) return res.status(500).json({ error: "Error generando token" });
 
       try {
-        await sendForgotPasswordEmail(normalizeEmail(email), token);
+        await sendForgotPasswordEmail(normalizeEmail(email), token, results[0].nombre);
         res.json({ message: "Si el correo existe, recibirás un enlace de recuperación." });
       } catch (e) {
         res.status(500).json({ error: "Error enviando correo" });

@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import icon from "../assets/images/icon.png";
+import UserNavbar from "../components/UserNavbar";
+import Alert from "../components/Alert";
+import { useTimedMessage } from "../hooks/useTimedMessage";
 
 const Dashboard = () => {
 
   const navigate = useNavigate();
+  const { message, showError, clear } = useTimedMessage();
 
   // USUARIO
   const [user, setUser] = useState<any>(null);
@@ -72,12 +75,22 @@ const Dashboard = () => {
           credentials: "include",
         });
 
+        if (res.status === 401) {
+          navigate("/login");
+          return null;
+        }
+
+        if (!res.ok) {
+          showError("No se pudo cargar tu reservación. Intenta recargar la página.");
+          return null;
+        }
+
         const data = await res.json();
         setReservation(data);
         return data;
 
       } catch {
-        console.log("Error al obtener reservación");
+        showError("No se pudo cargar tu reservación. Intenta recargar la página.");
         return null;
       }
     };
@@ -115,7 +128,7 @@ const Dashboard = () => {
           calculatePayment(reservationData, targetMonth, targetYear);
         }
       } catch {
-        console.log("Error al obtener información de pagos");
+        showError("No se pudo cargar tu información de pagos.");
       }
     };
 
@@ -138,44 +151,20 @@ const Dashboard = () => {
   const isRechazada = reservation?.estado === "rechazada" || reservation?.estado === "cancelada";
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col animate-page-transition">
+    <div className="min-h-screen bg-gray-50 flex flex-col animate-page-transition transition-colors">
 
       {/* NAVBAR */}
-      <nav className="bg-green-600 text-white px-8 py-4 flex justify-between items-center shadow-md z-10">
-
-        <Link to="/dashboard" className="flex items-center gap-3 font-bold text-lg tracking-wide">
-          <img
-            src={icon}
-            alt="logo"
-            className="w-8 drop-shadow-sm"
-          />
-          SICPES
-        </Link>
-
-        <div className="flex gap-8 items-center text-sm font-medium">
-          <Link to="/dashboard" className="text-green-100 border-b-2 border-white pb-1">Inicio</Link>
-          <Link to="/reservation" className="hover:text-green-200 transition">Peticiones</Link>
-          <Link to="/payments" className="hover:text-green-200 transition">Pagos</Link>
-
-          <button
-            className="bg-gray-900 border border-gray-800 text-white px-5 py-2 rounded-xl hover:bg-gray-800 transition shadow-sm ml-2"
-            onClick={async () => {
-              await fetch("/api/logout", {
-                method: "POST",
-                credentials: "include",
-              });
-
-              navigate("/login");
-            }}
-          >
-            Cerrar sesión
-          </button>
-        </div>
-      </nav>
+      <UserNavbar active="dashboard" />
 
       {/* CONTENIDO */}
       <div className="text-center mt-6 px-4 max-w-5xl mx-auto">
-        
+
+        {message && (
+          <div className="mb-6 text-left">
+            <Alert type={message.type} onClose={clear}>{message.text}</Alert>
+          </div>
+        )}
+
         {/* BIENVENIDA */}
         <h1 className="text-3xl font-bold text-gray-700">
           ¡Bienvenido, {user?.nombre || "Usuario"}!

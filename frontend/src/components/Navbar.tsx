@@ -7,7 +7,7 @@ const Navbar = () => {
   useEffect(() => {
     const fetchSession = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/session`, {
+        const res = await fetch(`/api/session`, {
           credentials: "include",
         });
         if (res.ok) {
@@ -25,7 +25,7 @@ const Navbar = () => {
   }, []);
 
   return (
-    <nav className="flex justify-between items-center px-10 py-4 bg-gray-100 shadow-sm">
+    <nav className="flex justify-between items-center px-10 py-4 bg-gray-100 shadow-sm transition-colors">
 
       {/* Logo */}
       <h1 className="text-xl font-bold text-green-700">SICPES</h1>

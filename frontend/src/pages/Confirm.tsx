@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
+import { CircleCheck } from "lucide-react";
 
 const Confirmado = () => {
 
@@ -15,7 +16,7 @@ const Confirmado = () => {
         {/* ICONO */}
         <div className="flex justify-center mb-4">
           <div className="bg-green-100 p-4 rounded-full">
-            <span className="text-green-600 text-3xl">✔</span>
+            <CircleCheck className="w-8 h-8 text-green-600" strokeWidth={2.25} />
           </div>
         </div>
 

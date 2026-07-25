@@ -110,6 +110,7 @@ CREATE TABLE `tbd_usuarios` (
   `rol` enum('user','admin') DEFAULT 'user',
   `confirmado` tinyint(1) DEFAULT '0',
   `token` varchar(255) DEFAULT NULL,
+  `telefono` varchar(30) DEFAULT NULL COMMENT 'Teléfono con prefijo whatsapp: para notificaciones por WhatsApp/SMS.',
   `creado_en` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`)
